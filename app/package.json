@@ -2,7 +2,10 @@
     "name": "cinestream",
     "version": "1.4.1",
     "description": "Cross-platform Movie Streaming Application",
-    "author": "Sushan Fernando",
+    "author": {
+        "name": "Sushan Fernando",
+        "email": "klsdfernando@gmail.com"
+    },
     "main": "main.js",
     "repository": {
         "type": "git",
