@@ -31,13 +31,18 @@ jobs:
           npm install
 
       - name: Build/Release Electron app
-        uses: samuelmeuli/action-electron-builder@v1
-        with:
-          # GitHub token, automatically provided to the action
-          # (no need to define this secret in the repo settings)
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-          # If the Action is triggered by a tag, a GitHub Release will be created
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
-          
-          package_root: app
+        run: |
+          cd app
+          # --win --mac --linux will build for all platforms
+          # --publish always will create the GitHub Release assets
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ./node_modules/.bin/electron-builder --win --publish always
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            # We disable code signing (CSC_IDENTITY_AUTO_DISCOVERY=false) 
+            # so the build doesn't fail due to missing certificates
+            CSC_IDENTITY_AUTO_DISCOVERY=false ./node_modules/.bin/electron-builder --mac --publish always
+          else
+            ./node_modules/.bin/electron-builder --linux --publish always
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
