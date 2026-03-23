@@ -26,11 +26,13 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
+        shell: bash
         run: |
           cd app
           npm install
 
       - name: Build/Release Electron app
+        shell: bash
         run: |
           cd app
           # --win --mac --linux will build for all platforms

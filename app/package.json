@@ -4,6 +4,10 @@
     "description": "Cross-platform Movie Streaming Application",
     "author": "Sushan Fernando",
     "main": "main.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/klsdfernando/CineStream.git"
+    },
     "scripts": {
         "start": "electron .",
         "dev": "electron . --enable-logging",
@@ -17,8 +21,15 @@
         "electron-builder": "^24.9.1"
     },
     "build": {
-        "appId": "com.movieapp.desktop",
+        "appId": "com.cinestream.desktop",
         "productName": "CineStream",
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "klsdfernando",
+                "repo": "CineStream"
+            }
+        ],
         "directories": {
             "output": "dist"
         },
