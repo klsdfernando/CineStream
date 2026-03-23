@@ -34,27 +34,32 @@
             }
         ],
         "directories": {
-            "output": "dist"
+            "output": "dist",
+            "buildResources": "build"
         },
+        "icon": "build/icon.png",
         "linux": {
             "target": [
                 "AppImage",
                 "deb"
             ],
-            "category": "Video"
+            "category": "Video",
+            "icon": "build/icon.png"
         },
         "mac": {
             "target": [
                 "dmg",
                 "zip"
             ],
-            "category": "public.app-category.video"
+            "category": "public.app-category.video",
+            "icon": "build/icon.png"
         },
         "win": {
             "target": [
                 "nsis",
                 "portable"
-            ]
+            ],
+            "icon": "build/icon.png"
         }
     }
 }
