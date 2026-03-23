@@ -1,0 +1,285 @@
+/* Person/Actor Page Styles */
+
+.person-page {
+    padding: 40px;
+    padding-top: 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Person Header */
+.person-header {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 40px;
+    align-items: flex-start;
+}
+
+.person-avatar-container {
+    flex-shrink: 0;
+}
+
+.person-avatar {
+    width: 200px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.person-avatar-placeholder {
+    width: 200px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    color: var(--text-muted);
+}
+
+.person-avatar-placeholder svg {
+    width: 64px;
+    height: 64px;
+}
+
+.person-info {
+    flex: 1;
+    padding-top: 16px;
+}
+
+.person-name {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.person-known-for {
+    display: inline-block;
+    background-color: var(--accent-green);
+    color: #000;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.person-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.person-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.person-meta-item svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-green);
+    flex-shrink: 0;
+}
+
+.person-meta-item.deceased svg {
+    color: var(--text-muted);
+}
+
+/* Person Sections */
+.person-section {
+    margin-bottom: 40px;
+}
+
+/* Biography */
+.person-biography {
+    position: relative;
+}
+
+.biography-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+}
+
+/* Photos Grid for Person */
+.person-section .photos-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.person-section .photos-grid::-webkit-scrollbar {
+    display: none;
+}
+
+.person-photo {
+    width: 160px;
+    aspect-ratio: 2/3;
+}
+
+.person-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Filmography Grid */
+.filmography-grid {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: none;
+}
+
+.filmography-grid::-webkit-scrollbar {
+    display: none;
+}
+
+.filmography-card {
+    flex-shrink: 0;
+    width: 150px;
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.filmography-card:hover {
+    transform: translateY(-4px);
+}
+
+.filmography-poster {
+    position: relative;
+    aspect-ratio: 2/3;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background-color: var(--bg-tertiary);
+    margin-bottom: 10px;
+}
+
+.filmography-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.filmography-poster .poster-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.filmography-poster .poster-placeholder svg {
+    width: 40px;
+    height: 40px;
+}
+
+.filmography-overlay {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+}
+
+.filmography-overlay .media-type-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.filmography-overlay .media-type-badge.movie {
+    background-color: var(--accent-green);
+    color: #000;
+}
+
+.filmography-overlay .media-type-badge.tv {
+    background-color: #8b5cf6;
+    color: #fff;
+}
+
+.filmography-info {
+    padding: 0 4px;
+}
+
+.filmography-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.filmography-character {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+}
+
+.filmography-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.filmography-rating {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: #fbbf24;
+}
+
+.filmography-rating svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .person-page {
+        padding: 20px;
+        padding-top: 50px;
+    }
+
+    .person-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .person-avatar {
+        width: 160px;
+        height: 240px;
+    }
+
+    .person-name {
+        font-size: 28px;
+    }
+
+    .person-meta {
+        align-items: center;
+    }
+
+    .filmography-card {
+        width: 130px;
+    }
+}

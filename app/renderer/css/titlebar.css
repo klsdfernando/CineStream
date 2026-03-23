@@ -1,0 +1,63 @@
+/* ============================================
+   Custom Titlebar
+   ============================================ */
+.titlebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--titlebar-height);
+    background-color: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    -webkit-app-region: drag;
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.titlebar-drag {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding-left: 16px;
+    height: 100%;
+}
+
+.titlebar-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.titlebar-controls {
+    display: flex;
+    height: 100%;
+    -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+    width: 46px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.titlebar-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.titlebar-btn-close:hover {
+    background-color: var(--accent-red);
+    color: white;
+}
+
+.titlebar-btn svg {
+    width: 12px;
+    height: 12px;
+}

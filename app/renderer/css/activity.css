@@ -1,0 +1,266 @@
+/**
+ * Activity Page Styles
+ */
+
+.activity-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.activity-title {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Tabs */
+.activity-tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.activity-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #a1a1aa);
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.activity-tab:hover {
+    color: var(--text-primary, #ffffff);
+}
+
+.activity-tab.active {
+    color: var(--accent-green, #22c55e);
+}
+
+.activity-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--accent-green, #22c55e);
+    border-radius: 2px 2px 0 0;
+}
+
+/* Grids */
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Playlist Cards */
+.playlist-card {
+    background: var(--surface, #18181b);
+    border: 1px solid var(--surface-light, #27272a);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: transform 0.2s, border-color 0.2s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.playlist-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-green);
+}
+
+.playlist-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--surface-light, #27272a);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-green, #22c55e);
+    margin-bottom: 0.5rem;
+}
+
+.playlist-title {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.playlist-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #a1a1aa);
+}
+
+/* Empty State */
+.activity-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 0;
+    color: var(--text-secondary, #a1a1aa);
+    text-align: center;
+}
+
+.activity-empty svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.activity-empty h3 {
+    color: var(--text-primary, #ffffff);
+    margin-bottom: 0.5rem;
+}
+
+/* Playlist Detail View */
+.playlist-detail-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 3rem;
+    background: var(--surface, #18181b);
+    padding: 2rem;
+    border-radius: 12px;
+}
+
+.playlist-detail-info {
+    flex: 1;
+}
+
+.playlist-detail-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.playlist-detail-desc {
+    color: var(--text-secondary, #a1a1aa);
+    margin-bottom: 1rem;
+}
+
+.btn-back-playlists {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #a1a1aa);
+    cursor: pointer;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    padding: 0;
+}
+
+.btn-back-playlists:hover {
+    color: var(--text-primary, #ffffff);
+}
+
+.btn-delete-playlist {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-delete-playlist:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Modals */
+.activity-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.activity-modal {
+    background: var(--surface, #18181b);
+    border: 1px solid var(--surface-light, #27272a);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.activity-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.activity-modal-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.btn-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #a1a1aa);
+    cursor: pointer;
+    padding: 4px;
+}
+
+.btn-modal-close:hover {
+    color: var(--text-primary, #ffffff);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #a1a1aa);
+}
+
+.form-input {
+    width: 100%;
+    background: var(--bg-color, #09090b);
+    border: 1px solid var(--surface-light, #27272a);
+    color: var(--text-primary, #ffffff);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-green, #22c55e);
+}

@@ -1,0 +1,43 @@
+name: Build/Release CineStream
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v1.4.1
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd app
+          npm install
+
+      - name: Build/Release Electron app
+        uses: samuelmeuli/action-electron-builder@v1
+        with:
+          # GitHub token, automatically provided to the action
+          # (no need to define this secret in the repo settings)
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          # If the Action is triggered by a tag, a GitHub Release will be created
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          
+          package_root: app

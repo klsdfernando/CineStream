@@ -1,0 +1,46 @@
+{
+    "name": "cinestream",
+    "version": "1.4.1",
+    "description": "Cross-platform Movie Streaming Application",
+    "author": "Sushan Fernando",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron . --enable-logging",
+        "dist": "electron-builder"
+    },
+    "dependencies": {
+        "webtorrent": "^2.8.5"
+    },
+    "devDependencies": {
+        "electron": "^28.2.0",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.movieapp.desktop",
+        "productName": "CineStream",
+        "directories": {
+            "output": "dist"
+        },
+        "linux": {
+            "target": [
+                "AppImage",
+                "deb"
+            ],
+            "category": "Video"
+        },
+        "mac": {
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "category": "public.app-category.video"
+        },
+        "win": {
+            "target": [
+                "nsis",
+                "portable"
+            ]
+        }
+    }
+}

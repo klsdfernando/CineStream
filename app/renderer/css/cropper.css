@@ -1,0 +1,217 @@
+/* ============================================
+   Image Cropper Modal Styles
+   ============================================ */
+
+.cropper-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.cropper-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.cropper-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+}
+
+.cropper-container {
+    position: relative;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.cropper-modal.active .cropper-container {
+    transform: scale(1);
+}
+
+.cropper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.cropper-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.cropper-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.cropper-close:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.cropper-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cropper-canvas-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+#cropper-canvas {
+    display: block;
+    max-width: 100%;
+}
+
+.crop-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.crop-area {
+    position: absolute;
+    border: 2px solid var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+    cursor: move;
+    pointer-events: auto;
+}
+
+.crop-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    cursor: nwse-resize;
+}
+
+.crop-handle.top-left {
+    top: -6px;
+    left: -6px;
+}
+
+.crop-handle.top-right {
+    top: -6px;
+    right: -6px;
+    cursor: nesw-resize;
+}
+
+.crop-handle.bottom-left {
+    bottom: -6px;
+    left: -6px;
+    cursor: nesw-resize;
+}
+
+.crop-handle.bottom-right {
+    bottom: -6px;
+    right: -6px;
+}
+
+.cropper-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cropper-controls label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.cropper-controls input[type="range"] {
+    flex: 1;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.cropper-controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(74, 222, 128, 0.4);
+}
+
+.cropper-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.btn-cropper-cancel {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-cropper-cancel:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.btn-cropper-save {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--accent-green);
+    border: none;
+    color: #000;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-cropper-save:hover {
+    background: #22c55e;
+    transform: translateY(-1px);
+}

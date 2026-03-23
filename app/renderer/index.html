@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://image.tmdb.org https://img.youtube.com data:; connect-src 'self' https://movie-app.sushanfer.dev; frame-src https://www.youtube.com https://vidlink.pro https://vidsrc-embed.ru;">
+  <title>CineStream</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/titlebar.css">
+  <link rel="stylesheet" href="css/sidebar.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/details.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/discover.css">
+  <link rel="stylesheet" href="css/watch.css">
+  <link rel="stylesheet" href="css/person.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/cropper.css">
+  <link rel="stylesheet" href="css/downloads.css">
+  <link rel="stylesheet" href="css/report.css">
+  <link rel="stylesheet" href="css/about.css">
+  <link rel="stylesheet" href="css/version-check.css">
+  <link rel="stylesheet" href="css/activity.css">
+</head>
+
+<body>
+  <!-- Custom Titlebar -->
+  <div class="titlebar" id="titlebar">
+    <div class="titlebar-drag">
+      <span class="titlebar-title">CineStream</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" id="btn-minimize" title="Minimize">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+          <rect y="5" width="12" height="2" rx="1" />
+        </svg>
+      </button>
+      <button class="titlebar-btn" id="btn-maximize" title="Maximize">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="1" y="1" width="10" height="10" rx="1" />
+        </svg>
+      </button>
+      <button class="titlebar-btn titlebar-btn-close" id="btn-close" title="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+          <path
+            d="M1.41 0L6 4.59L10.59 0L12 1.41L7.41 6L12 10.59L10.59 12L6 7.41L1.41 12L0 10.59L4.59 6L0 1.41L1.41 0Z" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Container -->
+  <div class="app-container">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-nav">
+        <a href="#" class="sidebar-item active" data-page="home">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Home</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="discover">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Discover</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="anime">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Anime</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="search">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Search</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="downloads">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Downloads</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="activity" style="display: none;">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          </div>
+          <span class="sidebar-label">Activity</span>
+        </a>
+      </div>
+
+      <!-- Bottom Section: Report + User Profile -->
+      <div class="sidebar-bottom">
+        <a href="#" class="sidebar-item" data-page="report">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+              <line x1="4" y1="22" x2="4" y2="15" />
+            </svg>
+          </div>
+          <span class="sidebar-label">Report</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="about">
+          <div class="sidebar-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </div>
+          <span class="sidebar-label">About</span>
+        </a>
+        <a href="#" class="sidebar-item" data-page="auth" id="user-profile-btn">
+          <div class="sidebar-icon user-avatar" id="user-avatar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+          <span class="sidebar-label" id="user-label">Login</span>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+      <!-- Dynamic content will be loaded here -->
+      <div class="loading-screen" id="loading-screen">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/components/movieCard.js"></script>
+  <script src="js/components/carousel.js"></script>
+  <script src="js/components/imageCropper.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/details.js"></script>
+  <script src="js/pages/search.js"></script>
+  <script src="js/pages/discover.js"></script>
+  <script src="js/pages/anime.js"></script>
+  <script src="js/pages/watch.js"></script>
+  <script src="js/pages/person.js"></script>
+  <script src="js/pages/auth.js"></script>
+  <script src="js/pages/profile.js"></script>
+  <script src="js/pages/downloads.js"></script>
+  <script src="js/pages/report.js"></script>
+  <script src="js/pages/about.js"></script>
+  <script src="js/versionCheck.js"></script>
+  <script src="js/pages/activity.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,211 @@
+/* ============================================
+   Version Check - Warning Banner & Lockout
+   ============================================ */
+
+/* Warning Banner - Dismissible */
+.version-warning {
+    position: fixed;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    padding: 14px 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
+    animation: slideDown 0.3s ease;
+    max-width: 90%;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateX(-50%) translateY(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.version-warning.dismissing {
+    animation: slideUp 0.3s ease forwards;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(-50%) translateY(-100%);
+        opacity: 0;
+    }
+}
+
+.version-warning-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.version-warning-content>svg {
+    color: #000;
+    flex-shrink: 0;
+}
+
+.version-warning-message {
+    color: #000;
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+}
+
+.version-warning-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    color: #000;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.version-warning-download:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.version-warning-close {
+    background: rgba(0, 0, 0, 0.15);
+    border: none;
+    color: #000;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: all 0.2s;
+}
+
+.version-warning-close:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+/* Lockout Overlay - Full Block */
+.version-lockout {
+    position: fixed;
+    top: 38px;
+    /* Below titlebar */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    background: var(--bg-primary, #0a0a0a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.version-lockout-content {
+    text-align: center;
+    padding: 40px;
+    max-width: 500px;
+}
+
+.version-lockout-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2));
+    border-radius: 50%;
+    margin-bottom: 24px;
+}
+
+.version-lockout-icon svg {
+    color: #ef4444;
+}
+
+.version-lockout-content h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+    margin: 0 0 16px 0;
+}
+
+.version-lockout-message {
+    color: var(--text-secondary, #a0a0a0);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 24px 0;
+}
+
+.version-lockout-version {
+    display: inline-block;
+    background: var(--bg-tertiary, #1f1f1f);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-muted, #666);
+    margin-bottom: 32px;
+}
+
+.version-lockout-version span {
+    color: #ef4444;
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.version-lockout-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--accent-green, #1ed760);
+    color: #000;
+    padding: 14px 32px;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.version-lockout-button:hover {
+    background: #1db954;
+    transform: scale(1.02);
+}
+
+.version-lockout-note {
+    color: var(--text-muted, #666);
+    font-size: 14px;
+    margin: 0;
+}

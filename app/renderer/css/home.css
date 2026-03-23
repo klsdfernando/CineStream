@@ -1,0 +1,167 @@
+/* ============================================
+   Home Page Styles
+   ============================================ */
+.home-page {
+    padding: var(--content-padding);
+    padding-bottom: 60px;
+}
+
+/* Section Styles */
+.section {
+    margin-bottom: 40px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background-color: var(--accent-green);
+    border-radius: 2px;
+}
+
+.section-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.section-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.section-icon.fire {
+    color: #ef4444;
+}
+
+.section-icon.star {
+    color: var(--accent-yellow);
+}
+
+.section-icon.clapperboard {
+    color: var(--accent-green);
+}
+
+.section-icon.shuffle {
+    color: #8b5cf6;
+}
+
+.see-all-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: color var(--transition-fast);
+}
+
+.see-all-btn:hover {
+    color: var(--accent-green);
+}
+
+.see-all-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Movies Carousel */
+.movies-carousel {
+    position: relative;
+}
+
+.movies-row {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.movies-row::-webkit-scrollbar {
+    display: none;
+}
+
+/* Carousel Navigation Buttons */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all var(--transition-fast);
+    z-index: 10;
+}
+
+.movies-carousel:hover .carousel-nav {
+    opacity: 1;
+}
+
+.carousel-nav:hover {
+    background-color: var(--accent-green);
+    border-color: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.carousel-nav.prev {
+    left: -20px;
+}
+
+.carousel-nav.next {
+    right: -20px;
+}
+
+.carousel-nav svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.empty-state svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    font-size: 14px;
+}
