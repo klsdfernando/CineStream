@@ -35,7 +35,7 @@ step "Step 1/8: Configuration"
 
 read -p "Enter your domain (e.g., api.example.com) or press Enter to skip: " DOMAIN </dev/tty
 
-SERVER_DIR="/home/$USER/cinestream-server"
+SERVER_DIR="$HOME/cinestream-server"
 
 echo ""
 log "Domain: ${DOMAIN:-'(no domain - IP only)'}"
@@ -188,10 +188,10 @@ else
 fi
 
 # Backup script
-cat > /home/$USER/backup-cinestream.sh << 'BACKUP_EOF'
+cat > $HOME/backup-cinestream.sh << 'BACKUP_EOF'
 #!/bin/bash
-BACKUP_DIR="/home/$USER/backups/cinestream"
-SERVER_DIR="/home/$USER/cinestream-server"
+BACKUP_DIR="$HOME/backups/cinestream"
+SERVER_DIR="$HOME/cinestream-server"
 DATE=$(date +%Y-%m-%d_%H%M)
 
 mkdir -p $BACKUP_DIR
@@ -203,11 +203,11 @@ done
 # Keep only last 7 days
 find $BACKUP_DIR -name "*.db" -mtime +7 -delete
 BACKUP_EOF
-chmod +x /home/$USER/backup-cinestream.sh
+chmod +x $HOME/backup-cinestream.sh
 log "Backup script created"
 
 # Setup cron: anti-idle every 5 min + daily backup at 3 AM
-(crontab -l 2>/dev/null | grep -v "cinestream"; echo "*/5 * * * * curl -s http://localhost:3001/health > /dev/null 2>&1"; echo "0 3 * * * /home/$USER/backup-cinestream.sh >> /home/$USER/backups/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "cinestream"; echo "*/5 * * * * curl -s http://localhost:3001/health > /dev/null 2>&1"; echo "0 3 * * * $HOME/backup-cinestream.sh >> $HOME/backups/backup.log 2>&1") | crontab -
 log "Cron jobs set (anti-idle + daily backups)"
 
 # ── Done! ────────────────────────────────────────────────────
