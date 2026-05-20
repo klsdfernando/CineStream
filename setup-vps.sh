@@ -84,6 +84,7 @@ if [ -d "$SERVER_DIR" ]; then
     cd "$SERVER_DIR"
     git pull
 else
+    rm -rf /tmp/cinestream-clone
     git clone https://github.com/klsdfernando/CineStream.git /tmp/cinestream-clone
     # Copy old_server to the deploy directory
     cp -r /tmp/cinestream-clone/old_server "$SERVER_DIR"
