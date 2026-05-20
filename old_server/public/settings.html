@@ -432,7 +432,7 @@
         <!-- Settings Form -->
         <div class="settings-card">
             <h2>Server Configuration</h2>
-            <p class="subtitle">Manage your server's .env configuration from here. Sensitive values are masked for security.</p>
+            <p class="subtitle">Manage your server's .env configuration from here. Click the eye icon to show/hide sensitive values.</p>
 
             <form id="settings-form">
                 <!-- Settings fields will be injected here by JS -->
@@ -540,7 +540,7 @@
                                 value="${field.value}"
                                 autocomplete="off"
                             >
-                            ${field.sensitive ? `<button type="button" class="toggle-vis-btn" data-target="field-${field.key}" title="Toggle visibility">👁️</button>` : ''}
+                            ${field.sensitive ? `<button type="button" class="toggle-vis-btn" data-target="field-${field.key}" title="Toggle visibility">Show</button>` : ''}
                         </div>
                     `;
                     container.appendChild(row);
@@ -550,8 +550,13 @@
                 document.querySelectorAll('.toggle-vis-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const input = document.getElementById(btn.dataset.target);
-                        input.type = input.type === 'password' ? 'text' : 'password';
-                        btn.textContent = input.type === 'password' ? '👁️' : '🙈';
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            btn.textContent = 'Hide';
+                        } else {
+                            input.type = 'password';
+                            btn.textContent = 'Show';
+                        }
                     });
                 });
 
@@ -572,10 +577,6 @@
             inputs.forEach(input => {
                 const key = input.dataset.key;
                 const value = input.value.trim();
-                const isSensitive = input.dataset.sensitive === 'true';
-
-                // Skip masked sensitive values (user didn't change them)
-                if (isSensitive && value === '••••••••') return;
 
                 // Include all non-empty values
                 if (value) {

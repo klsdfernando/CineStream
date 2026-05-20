@@ -76,16 +76,14 @@ export default async function settingsRoutes(fastify) {
             const env = readEnvFile();
             const hasEnvFile = fs.existsSync(envPath);
 
-            // Return settings with sensitive values masked
+            // Return settings - admin is already authenticated so show real values
             const settings = SETTINGS_SCHEMA.map(field => ({
                 key: field.key,
                 label: field.label,
                 type: field.type,
                 sensitive: field.sensitive,
                 placeholder: field.placeholder,
-                value: field.sensitive
-                    ? (env[field.key] ? '••••••••' : '')  // Mask sensitive values
-                    : (env[field.key] || ''),
+                value: env[field.key] || '',
                 hasValue: !!env[field.key],
             }));
 
@@ -126,7 +124,7 @@ export default async function settingsRoutes(fastify) {
             let changeCount = 0;
 
             for (const [key, value] of Object.entries(updates)) {
-                if (allowedKeys.includes(key) && value !== undefined && value !== '••••••••') {
+                if (allowedKeys.includes(key) && value !== undefined) {
                     current[key] = value;
                     changeCount++;
                 }
