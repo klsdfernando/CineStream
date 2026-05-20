@@ -33,7 +33,7 @@ print_banner
 # ── Collect info ────────────────────────────────────────────
 step "Step 1/8: Configuration"
 
-read -p "Enter your domain (e.g., api.example.com) or press Enter to skip: " DOMAIN
+read -p "Enter your domain (e.g., api.example.com) or press Enter to skip: " DOMAIN </dev/tty
 
 SERVER_DIR="/home/$USER/cinestream-server"
 
@@ -42,7 +42,7 @@ log "Domain: ${DOMAIN:-'(no domain - IP only)'}"
 log "Install dir: $SERVER_DIR"
 log "NOTE: TMDB key, JWT secret, etc. can be set from the Admin Panel → Settings after setup!"
 echo ""
-read -p "Proceed? (y/n): " CONFIRM
+read -p "Proceed? (y/n): " CONFIRM </dev/tty
 if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     echo "Aborted."
     exit 0
