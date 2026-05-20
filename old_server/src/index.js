@@ -16,6 +16,7 @@ import torrentRoutes from './routes/torrents.js';
 import { animeRoutes } from './routes/anime.js';
 import { reportsRoutes } from './routes/reports.js';
 import versionsRoutes from './routes/versions.js';
+import settingsRoutes from './routes/settings.js';
 import { initDatabase } from './db/database.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,6 +122,7 @@ await fastify.register(adminRoutes, { prefix: '/api' });
 await fastify.register(torrentRoutes, { prefix: '/api' });
 await fastify.register(reportsRoutes);
 await fastify.register(versionsRoutes);
+await fastify.register(settingsRoutes, { prefix: '/api' });
 
 // Global error handler
 fastify.setErrorHandler((error, request, reply) => {
