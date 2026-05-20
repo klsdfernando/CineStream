@@ -30,10 +30,6 @@ step() { echo -e "\n${CYAN}━━━ $1 ━━━${NC}"; }
 # ── Pre-checks ──────────────────────────────────────────────
 print_banner
 
-if [ "$EUID" -eq 0 ]; then
-    error "Don't run as root! Run as a normal user (e.g., ubuntu). The script uses sudo where needed."
-fi
-
 # ── Collect info ────────────────────────────────────────────
 step "Step 1/8: Configuration"
 
