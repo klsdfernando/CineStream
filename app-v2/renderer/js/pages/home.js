@@ -1,64 +1,76 @@
 /**
- * Home Page - Browse Movies and TV Series
+ * Home Page - Browse Movies, TV Series, and Anime
  */
 
 const HomePage = {
-    currentView: 'movies', // 'movies' or 'tv'
+    currentView: 'movies', // 'movies' | 'tv' | 'anime'
 
     async render() {
+        HeroCarousel.destroy();
+
         const container = document.getElementById('main-content');
         container.innerHTML = `
             <div class="home-page fade-in">
-                <div class="page-header home-header">
-                    <h1>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            <polyline points="9 22 9 12 15 12 15 22"/>
-                        </svg>
-                        Home
-                    </h1>
-                    <div class="view-toggle">
-                        <button class="toggle-btn active" id="btn-movies">Movies</button>
-                        <button class="toggle-btn" id="btn-tv">TV Series</button>
-                    </div>
-                </div>
-                
                 <div id="home-sections"></div>
             </div>
         `;
 
-        // Setup toggle buttons
-        this.setupToggle();
-
-        // Load movies view initially
-        await this.loadMoviesView();
+        this.syncTopToggle();
+        this.setupTopToggle();
+        await this.loadCurrentView();
     },
 
-    setupToggle() {
-        const moviesBtn = document.getElementById('btn-movies');
-        const tvBtn = document.getElementById('btn-tv');
+    setupTopToggle() {
+        const toggle = document.getElementById('topnav-home-toggle');
+        if (!toggle || toggle.dataset.bound === '1') return;
+        toggle.dataset.bound = '1';
 
-        moviesBtn.addEventListener('click', async () => {
-            if (this.currentView === 'movies') return;
+        toggle.querySelectorAll('.home-seg-btn').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const view = btn.dataset.homeView;
+                if (!view) return;
 
-            moviesBtn.classList.add('active');
-            tvBtn.classList.remove('active');
-            this.currentView = 'movies';
-            await this.loadMoviesView();
+                if (router.currentPage !== 'home') {
+                    this.currentView = view;
+                    await router.navigate('home');
+                    return;
+                }
+
+                await this.setView(view);
+            });
         });
+    },
 
-        tvBtn.addEventListener('click', async () => {
-            if (this.currentView === 'tv') return;
+    syncTopToggle() {
+        document.querySelectorAll('#topnav-home-toggle .home-seg-btn').forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.homeView === this.currentView);
+        });
+    },
 
-            tvBtn.classList.add('active');
-            moviesBtn.classList.remove('active');
-            this.currentView = 'tv';
+    async setView(view) {
+        if (view === this.currentView && document.getElementById('home-sections')) {
+            this.syncTopToggle();
+            return;
+        }
+        this.currentView = view;
+        this.syncTopToggle();
+        await this.loadCurrentView();
+    },
+
+    async loadCurrentView() {
+        if (this.currentView === 'tv') {
             await this.loadTVView();
-        });
+        } else if (this.currentView === 'anime') {
+            await this.loadAnimeView();
+        } else {
+            await this.loadMoviesView();
+        }
     },
 
     async loadMoviesView() {
         const sectionsContainer = document.getElementById('home-sections');
+        if (!sectionsContainer) return;
+        HeroCarousel.destroy();
         sectionsContainer.innerHTML = `
             <div class="loading-screen">
                 <div class="loading-spinner"></div>
@@ -67,7 +79,6 @@ const HomePage = {
         `;
 
         try {
-            // Load all movie sections in parallel
             const [trendingData, popularData, topRatedData, upcomingData] = await Promise.all([
                 api.movies.getTrending('day'),
                 api.movies.getPopular(),
@@ -77,22 +88,31 @@ const HomePage = {
 
             sectionsContainer.innerHTML = '';
 
-            // Trending Movies
-            if (trendingData.results?.length > 0) {
-                // Filter to only movies
-                const movies = trendingData.results.filter(m => m.mediaType === 'movie' || !m.mediaType);
-                if (movies.length > 0) {
-                    sectionsContainer.appendChild(
-                        Carousel.create({
-                            title: 'Trending Movies',
-                            iconType: 'fire',
-                            movies: movies
-                        })
-                    );
-                }
+            const movies = (trendingData.results || []).filter(
+                (m) => m.mediaType === 'movie' || !m.mediaType
+            );
+            const heroItems = this._pickHeroItems(movies.length ? movies : (popularData.results || []));
+
+            if (heroItems.length > 0) {
+                sectionsContainer.appendChild(
+                    HeroCarousel.create({
+                        items: heroItems,
+                        railTitle: 'Trending Now',
+                        mediaType: 'movie'
+                    })
+                );
             }
 
-            // Popular Movies
+            if (movies.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({
+                        title: 'Trending Movies',
+                        iconType: 'fire',
+                        movies
+                    })
+                );
+            }
+
             if (popularData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -103,7 +123,6 @@ const HomePage = {
                 );
             }
 
-            // Top Rated Movies
             if (topRatedData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -114,7 +133,6 @@ const HomePage = {
                 );
             }
 
-            // Upcoming Movies
             if (upcomingData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -124,24 +142,16 @@ const HomePage = {
                     })
                 );
             }
-
         } catch (error) {
             console.error('Failed to load movies:', error);
-            sectionsContainer.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <p>Failed to load movies. Please check your internet connection.</p>
-                </div>
-            `;
+            sectionsContainer.innerHTML = this._errorState('Failed to load movies. Please check your internet connection.');
         }
     },
 
     async loadTVView() {
         const sectionsContainer = document.getElementById('home-sections');
+        if (!sectionsContainer) return;
+        HeroCarousel.destroy();
         sectionsContainer.innerHTML = `
             <div class="loading-screen">
                 <div class="loading-spinner"></div>
@@ -150,7 +160,6 @@ const HomePage = {
         `;
 
         try {
-            // Load all TV sections in parallel
             const [trendingData, popularData, topRatedData, airingData] = await Promise.all([
                 api.tv.getTrending ? api.tv.getTrending() : api.movies.getTrending('day'),
                 api.tv.getPopular ? api.tv.getPopular() : { results: [] },
@@ -160,22 +169,30 @@ const HomePage = {
 
             sectionsContainer.innerHTML = '';
 
-            // Trending TV
-            if (trendingData.results?.length > 0) {
-                // Filter to only TV shows
-                const tvShows = trendingData.results.filter(m => m.mediaType === 'tv');
-                if (tvShows.length > 0) {
-                    sectionsContainer.appendChild(
-                        Carousel.create({
-                            title: 'Trending TV Series',
-                            iconType: 'fire',
-                            movies: tvShows
-                        })
-                    );
-                }
+            const tvShows = (trendingData.results || []).filter((m) => m.mediaType === 'tv');
+            const heroSource = tvShows.length ? tvShows : (popularData.results || []);
+            const heroItems = this._pickHeroItems(heroSource);
+
+            if (heroItems.length > 0) {
+                sectionsContainer.appendChild(
+                    HeroCarousel.create({
+                        items: heroItems,
+                        railTitle: 'Trending Now',
+                        mediaType: 'tv'
+                    })
+                );
             }
 
-            // Popular TV
+            if (tvShows.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({
+                        title: 'Trending TV Series',
+                        iconType: 'fire',
+                        movies: tvShows
+                    })
+                );
+            }
+
             if (popularData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -186,7 +203,6 @@ const HomePage = {
                 );
             }
 
-            // Top Rated TV
             if (topRatedData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -197,7 +213,6 @@ const HomePage = {
                 );
             }
 
-            // Currently Airing
             if (airingData.results?.length > 0) {
                 sectionsContainer.appendChild(
                     Carousel.create({
@@ -207,20 +222,91 @@ const HomePage = {
                     })
                 );
             }
-
         } catch (error) {
             console.error('Failed to load TV series:', error);
-            sectionsContainer.innerHTML = `
-                <div class="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <p>Failed to load TV series. Please check your internet connection.</p>
-                </div>
-            `;
+            sectionsContainer.innerHTML = this._errorState('Failed to load TV series. Please check your internet connection.');
         }
+    },
+
+    async loadAnimeView() {
+        const sectionsContainer = document.getElementById('home-sections');
+        if (!sectionsContainer) return;
+        HeroCarousel.destroy();
+        sectionsContainer.innerHTML = `
+            <div class="loading-screen">
+                <div class="loading-spinner"></div>
+                <p>Loading anime...</p>
+            </div>
+        `;
+
+        try {
+            const [trendingData, topRatedData, airingData, popularData] = await Promise.all([
+                api.anime.getTrending(),
+                api.anime.getTopRated(),
+                api.anime.getAiring(),
+                api.anime.getPopular()
+            ]);
+
+            sectionsContainer.innerHTML = '';
+
+            const trending = trendingData.results || [];
+            const heroItems = this._pickHeroItems(
+                trending.length ? trending : (popularData.results || [])
+            );
+
+            if (heroItems.length > 0) {
+                sectionsContainer.appendChild(
+                    HeroCarousel.create({
+                        items: heroItems,
+                        railTitle: 'Trending Now',
+                        mediaType: 'tv'
+                    })
+                );
+            }
+
+            if (trending.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({ title: 'Trending Anime', iconType: 'fire', movies: trending })
+                );
+            }
+            if (topRatedData.results?.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({ title: 'Top Rated Anime', iconType: 'star', movies: topRatedData.results })
+                );
+            }
+            if (airingData.results?.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({ title: 'Currently Airing', iconType: 'play', movies: airingData.results })
+                );
+            }
+            if (popularData.results?.length > 0) {
+                sectionsContainer.appendChild(
+                    Carousel.create({ title: 'Popular Anime', iconType: 'clapperboard', movies: popularData.results })
+                );
+            }
+        } catch (error) {
+            console.error('Failed to load anime:', error);
+            sectionsContainer.innerHTML = this._errorState('Failed to load anime. Please check your internet connection.');
+        }
+    },
+
+    _pickHeroItems(items) {
+        return (items || [])
+            .filter((m) => m && (m.backdrop || m.backdropOriginal))
+            .slice(0, 12);
+    },
+
+    _errorState(message) {
+        return `
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p>${message}</p>
+            </div>
+        `;
     }
 };
 

@@ -128,8 +128,10 @@ ul, ol {
    ============================================ */
 .app-container {
   display: flex;
+  flex-direction: column;
   height: calc(100vh - var(--titlebar-height));
   margin-top: var(--titlebar-height);
+  position: relative;
 }
 
 .main-content {
@@ -138,6 +140,7 @@ ul, ol {
   overflow-x: hidden;
   position: relative;
   background-color: var(--bg-primary);
+  width: 100%;
 }
 
 /* ============================================

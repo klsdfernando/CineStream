@@ -57,104 +57,97 @@
 
   <!-- Main App Container -->
   <div class="app-container">
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-      <div class="sidebar-nav">
-        <a href="#" class="sidebar-item active" data-page="home">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Home</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="discover">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Discover</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="anime">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Anime</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="search">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Search</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="downloads">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Downloads</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="activity" style="display: none;">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-          </div>
-          <span class="sidebar-label">Activity</span>
-        </a>
+    <!-- Premium Top Navigation -->
+    <nav class="topnav topnav--overlay" id="topnav">
+      <a href="#" class="topnav-brand" data-page="home" id="topnav-brand" aria-label="CineStream Home">
+        <span class="brand-cine">Cine</span><span class="brand-stream">Stream</span>
+      </a>
+
+      <div class="topnav-home-toggle" id="topnav-home-toggle" role="tablist" aria-label="Home content">
+        <button type="button" class="home-seg-btn active" data-home-view="movies">Movies</button>
+        <button type="button" class="home-seg-btn" data-home-view="tv">TV Series</button>
+        <button type="button" class="home-seg-btn" data-home-view="anime">Anime</button>
       </div>
 
-      <!-- Bottom Section: Report + User Profile -->
-      <div class="sidebar-bottom">
-        <a href="#" class="sidebar-item" data-page="report">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-              <line x1="4" y1="22" x2="4" y2="15" />
-            </svg>
-          </div>
-          <span class="sidebar-label">Report</span>
+      <div class="topnav-actions">
+        <a href="#" class="topnav-icon-btn" data-page="search" title="Search" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+          </svg>
         </a>
-        <a href="#" class="sidebar-item" data-page="about">
-          <div class="sidebar-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="16" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12.01" y2="8" />
-            </svg>
+
+        <div class="topnav-profile-wrap" id="topnav-profile-wrap">
+          <button type="button" class="topnav-profile" id="user-profile-btn" title="Menu" aria-haspopup="true"
+            aria-expanded="false" aria-controls="profile-dropdown">
+            <div class="user-avatar" id="user-avatar">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+          </button>
+
+          <div class="topnav-dropdown" id="profile-dropdown" role="menu">
+            <button type="button" class="topnav-dropdown-item" data-page="auth" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span id="user-label">Login</span>
+            </button>
+            <div class="topnav-dropdown-divider"></div>
+            <button type="button" class="topnav-dropdown-item" data-page="discover" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+              </svg>
+              <span>Discover</span>
+            </button>
+            <button type="button" class="topnav-dropdown-item" data-page="downloads" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Downloads</span>
+            </button>
+            <button type="button" class="topnav-dropdown-item" data-page="activity" id="nav-activity" role="menuitem"
+              style="display: none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              <span>Activity</span>
+            </button>
+            <button type="button" class="topnav-dropdown-item" data-page="report" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+              <span>Report</span>
+            </button>
+            <button type="button" class="topnav-dropdown-item" data-page="about" role="menuitem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              <span>About</span>
+            </button>
+            <div class="topnav-dropdown-divider" id="logout-divider" hidden></div>
+            <button type="button" class="topnav-dropdown-item topnav-dropdown-item--danger" id="nav-logout"
+              role="menuitem" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Logout</span>
+            </button>
           </div>
-          <span class="sidebar-label">About</span>
-        </a>
-        <a href="#" class="sidebar-item" data-page="auth" id="user-profile-btn">
-          <div class="sidebar-icon user-avatar" id="user-avatar">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-          </div>
-          <span class="sidebar-label" id="user-label">Login</span>
-        </a>
+        </div>
       </div>
     </nav>
 
@@ -172,6 +165,7 @@
   <script src="js/api.js"></script>
   <script src="js/components/movieCard.js"></script>
   <script src="js/components/carousel.js"></script>
+  <script src="js/components/heroCarousel.js"></script>
   <script src="js/components/imageCropper.js"></script>
   <script src="js/pages/home.js"></script>
   <script src="js/pages/details.js"></script>

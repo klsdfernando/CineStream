@@ -56,16 +56,19 @@ function updateUserUI() {
     const userBtn = document.getElementById('user-profile-btn');
     const userAvatar = document.getElementById('user-avatar');
     const userLabel = document.getElementById('user-label');
+    const activityNav = document.getElementById('nav-activity');
+    const logoutBtn = document.getElementById('nav-logout');
+    const logoutDivider = document.getElementById('logout-divider');
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     const token = localStorage.getItem('authToken');
 
     if (user && token) {
         // User is logged in
-        userBtn.classList.add('logged-in');
-        userLabel.textContent = user.firstName || 'Profile';
-
-        console.log('[UpdateUserUI] User data:', user);
-        console.log('[UpdateUserUI] ProfilePic exists:', !!user.profilePic);
+        userBtn?.classList.add('logged-in');
+        if (userLabel) userLabel.textContent = user.firstName || 'Profile';
+        if (activityNav) activityNav.style.display = '';
+        if (logoutBtn) logoutBtn.hidden = false;
+        if (logoutDivider) logoutDivider.hidden = false;
 
         // Show profile pic if available, otherwise show initials
         if (user.profilePic) {
@@ -80,8 +83,11 @@ function updateUserUI() {
         }
     } else {
         // User not logged in
-        userBtn.classList.remove('logged-in');
-        userLabel.textContent = 'Login';
+        userBtn?.classList.remove('logged-in');
+        if (userLabel) userLabel.textContent = 'Login';
+        if (activityNav) activityNav.style.display = 'none';
+        if (logoutBtn) logoutBtn.hidden = true;
+        if (logoutDivider) logoutDivider.hidden = true;
         userAvatar.innerHTML = `
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">

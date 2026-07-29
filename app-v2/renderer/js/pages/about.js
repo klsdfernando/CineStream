@@ -243,7 +243,7 @@ const AboutPage = {
                             </p>
                             <p>
                                 If you encounter any issues or have suggestions, please use the "Report" feature 
-                                in the sidebar. Your feedback helps make this app better for everyone.
+                                in the top menu. Your feedback helps make this app better for everyone.
                             </p>
                             <p class="signature">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline; vertical-align: middle; margin-right: 6px;">

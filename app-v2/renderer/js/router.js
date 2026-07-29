@@ -6,6 +6,7 @@ const router = {
     currentPage: 'home',
     currentParams: {},
     history: [],
+    overlayPages: ['home', 'details', 'watch'],
 
     /**
      * Navigate to a page
@@ -13,6 +14,8 @@ const router = {
      * @param {Object} params - Optional parameters
      */
     async navigate(page, params = {}) {
+        this.closeProfileMenu();
+
         // Save current state to history
         this.history.push({ page: this.currentPage, params: this.currentParams });
 
@@ -20,19 +23,20 @@ const router = {
         this.currentParams = params;
 
         await this.render();
-        this.updateSidebar();
+        this.updateNav();
     },
 
     /**
      * Go back in history
      */
     async back() {
+        this.closeProfileMenu();
         if (this.history.length > 0) {
             const previous = this.history.pop();
             this.currentPage = previous.page;
             this.currentParams = previous.params;
             await this.render();
-            this.updateSidebar();
+            this.updateNav();
         } else {
             await this.navigate('home');
         }
@@ -67,7 +71,10 @@ const router = {
                 await DiscoverPage.render();
                 break;
             case 'anime':
-                await AnimePage.render();
+                // Anime now lives in the Home Movies/TV/Anime switcher
+                HomePage.currentView = 'anime';
+                this.currentPage = 'home';
+                await HomePage.render();
                 break;
             case 'watch':
                 await WatchPage.render(this.currentParams);
@@ -110,21 +117,54 @@ const router = {
         mainContent.scrollTop = 0;
     },
 
+    closeProfileMenu() {
+        const wrap = document.getElementById('topnav-profile-wrap');
+        const btn = document.getElementById('user-profile-btn');
+        if (!wrap) return;
+        wrap.classList.remove('is-open');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    },
+
+    toggleProfileMenu() {
+        const wrap = document.getElementById('topnav-profile-wrap');
+        const btn = document.getElementById('user-profile-btn');
+        if (!wrap || !btn) return;
+
+        const willOpen = !wrap.classList.contains('is-open');
+        wrap.classList.toggle('is-open', willOpen);
+        btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    },
+
     /**
-     * Update sidebar active state
+     * Update top navigation active state + overlay/solid mode
      */
-    updateSidebar() {
-        const sidebarItems = document.querySelectorAll('.sidebar-item');
-        sidebarItems.forEach(item => {
+    updateNav() {
+        const topnav = document.getElementById('topnav');
+        const navItems = document.querySelectorAll('#topnav [data-page]');
+        const page = this.currentPage;
+        const activePage = (page === 'details' || page === 'watch' || page === 'person')
+            ? 'home'
+            : (page === 'profile' ? 'auth' : page);
+
+        navItems.forEach((item) => {
             item.classList.remove('active');
-            if (item.dataset.page === this.currentPage) {
+            if (item.dataset.page === activePage) {
                 item.classList.add('active');
             }
         });
 
-        // For details and watch pages, keep home active
-        if (this.currentPage === 'details' || this.currentPage === 'watch') {
-            document.querySelector('.sidebar-item[data-page="home"]')?.classList.add('active');
+        const useOverlay = this.overlayPages.includes(page);
+        if (topnav) {
+            topnav.classList.toggle('topnav--overlay', useOverlay);
+            topnav.classList.toggle('topnav--solid', !useOverlay);
+        }
+        document.body.classList.toggle('nav-solid', !useOverlay);
+        document.body.dataset.page = page;
+
+        // Keep home content switcher in sync when landing on home
+        if (page === 'home' && window.HomePage) {
+            HomePage.syncTopToggle();
+            HomePage.setupTopToggle();
         }
     },
 
@@ -132,9 +172,8 @@ const router = {
      * Initialize router
      */
     init() {
-        // Setup sidebar navigation
-        const sidebarItems = document.querySelectorAll('.sidebar-item');
-        sidebarItems.forEach(item => {
+        const navItems = document.querySelectorAll('#topnav [data-page]');
+        navItems.forEach((item) => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 const page = item.dataset.page;
@@ -143,6 +182,38 @@ const router = {
                 }
             });
         });
+
+        const profileBtn = document.getElementById('user-profile-btn');
+        profileBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleProfileMenu();
+        });
+
+        document.getElementById('nav-logout')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.logoutUser === 'function') {
+                window.logoutUser();
+            }
+            this.closeProfileMenu();
+        });
+
+        document.addEventListener('click', (e) => {
+            const wrap = document.getElementById('topnav-profile-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                this.closeProfileMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.closeProfileMenu();
+        });
+
+        // Home Movies / TV / Anime switcher
+        if (window.HomePage) {
+            HomePage.setupTopToggle();
+        }
 
         // Initial render
         this.navigate('home');
