@@ -6,7 +6,8 @@ const router = {
     currentPage: 'home',
     currentParams: {},
     history: [],
-    overlayPages: ['home', 'details', 'watch'],
+    // Keep the video player below a solid header; only visual pages use nav overlay.
+    overlayPages: ['home', 'details'],
 
     /**
      * Navigate to a page

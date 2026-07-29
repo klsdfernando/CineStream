@@ -7,13 +7,88 @@ const WatchPage = {
     mediaType: 'movie', // 'movie' or 'tv'
     mediaData: null,
     isPlaying: false,
-    currentPlayer: 'vidlink',
+    currentPlayer: 'vidnest',
     // TV-specific state
     currentSeason: 1,
     currentEpisode: 1,
     seasonData: null,
 
+    servers: [
+        {
+            id: 'vidnest',
+            name: 'Vidnest',
+            badge: 'Primary',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://vidnest.fun/tv/${id}/${s}/${e}`
+                : `https://vidnest.fun/movie/${id}`
+        },
+        {
+            id: 'vidlink',
+            name: 'VidLink',
+            getUrl: (type, id, s, e) => {
+                const baseUrl = type === 'tv'
+                    ? `https://vidlink.pro/tv/${id}/${s}/${e}`
+                    : `https://vidlink.pro/movie/${id}`;
+                const params = new URLSearchParams({
+                    primaryColor: '4CAF50',
+                    secondaryColor: '1a1a1a',
+                    iconColor: 'ffffff',
+                    player: 'jw',
+                    title: 'true',
+                    poster: 'true',
+                    autoplay: 'true',
+                    nextbutton: 'false',
+                });
+                return `${baseUrl}?${params.toString()}`;
+            }
+        },
+        {
+            id: 'vidrock',
+            name: 'VidRock',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://vidrock.net/embed/tv/${id}/${s}/${e}`
+                : `https://vidrock.net/embed/movie/${id}`
+        },
+        {
+            id: 'vidking',
+            name: 'VidKing',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://www.vidking.net/embed/tv/${id}/${s}/${e}`
+                : `https://www.vidking.net/embed/movie/${id}`
+        },
+        {
+            id: 'videasy',
+            name: 'Videasy',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://player.videasy.net/tv/${id}/${s}/${e}`
+                : `https://player.videasy.net/movie/${id}`
+        },
+        {
+            id: '111movies',
+            name: '111Movies',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://111movies.com/tv/${id}/${s}/${e}`
+                : `https://111movies.com/movie/${id}`
+        },
+        {
+            id: '2embed',
+            name: '2Embed',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://www.2embed.stream/embed/tv/${id}/${s}/${e}`
+                : `https://www.2embed.stream/embed/movie/${id}`
+        },
+        {
+            id: '2embed-v2',
+            name: '2Embed v2',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
+                : `https://www.2embed.cc/embed/${id}`
+        }
+    ],
+
     async render(params) {
+        this.isPlaying = false;
+        this.currentPlayer = 'vidnest';
         // Support both old format (just id) and new format ({id, mediaType})
         if (typeof params === 'object') {
             this.mediaId = params.id;
@@ -107,6 +182,30 @@ const WatchPage = {
                                 <polygon points="5 3 19 12 5 21 5 3"/>
                             </svg>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Server Selection Pill Bar -->
+                <div class="server-selection-bar">
+                    <div class="server-selection-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                            <line x1="6" y1="6" x2="6.01" y2="6"/>
+                            <line x1="6" y1="18" x2="6.01" y2="18"/>
+                        </svg>
+                        <span>Server:</span>
+                    </div>
+                    <div class="server-pill-container" role="tablist">
+                        ${this.servers.map((server, index) => `
+                            <button type="button" 
+                                    class="server-pill-btn ${this.currentPlayer === server.id ? 'active' : ''}" 
+                                    data-server-id="${server.id}"
+                                    onclick="WatchPage.switchServer('${server.id}')">
+                                <span class="server-num">Server ${index + 1}</span>
+                                <span class="server-name">${server.name}</span>
+                            </button>
+                        `).join('')}
                     </div>
                 </div>
 
@@ -366,9 +465,7 @@ const WatchPage = {
     updatePlayer() {
         const iframe = document.getElementById('video-player-iframe');
         if (iframe) {
-            const playerUrl = this.currentPlayer === 'vidlink'
-                ? this.buildPlayerUrl()
-                : this.buildBackupPlayerUrl();
+            const playerUrl = this.buildPlayerUrl();
             iframe.src = playerUrl;
         }
     },
@@ -634,18 +731,20 @@ const WatchPage = {
             // Remove the preview
             preview.style.display = 'none';
 
-            // Create and insert iframe
-            const iframe = document.createElement('iframe');
-            iframe.src = playerUrl;
-            iframe.id = 'video-player-iframe';
-            iframe.className = 'video-player-iframe';
-            iframe.setAttribute('allowfullscreen', '');
-            iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
-            iframe.style.cssText = 'width: 100%; height: 100%; border: none; border-radius: var(--radius-lg);';
+            // Create and insert iframe if not already created
+            let iframe = document.getElementById('video-player-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'video-player-iframe';
+                iframe.className = 'video-player-iframe';
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+                iframe.style.cssText = 'width: 100%; height: 100%; border: none; border-radius: var(--radius-lg);';
+                playerContainer.appendChild(iframe);
+            }
 
-            playerContainer.appendChild(iframe);
+            iframe.src = playerUrl;
             this.isPlaying = true;
-            this.currentPlayer = 'vidlink';
 
             // Record "watched" activity if logged in
             if (localStorage.getItem('authToken')) {
@@ -660,140 +759,39 @@ const WatchPage = {
                     actionType: 'watched'
                 }).catch(err => console.error('Failed to record watch history:', err));
             }
-
-            // Setup fallback listener disabled per request
-            // this.setupPlayerFallback();
         }
     },
 
-    /* Server 2 disabled 
-    setupPlayerFallback() {
-        // Listen for postMessage from iframe
-        window.addEventListener('message', (event) => {
-            if (event.origin.includes('vidlink.pro')) {
-                const data = event.data;
-                if (data && (
-                    data.type === 'error' ||
-                    data.error ||
-                    data.status === 'not_found' ||
-                    data.message?.includes('not found') ||
-                    data.message?.includes('couldn\'t find')
-                )) {
-                    console.log('[Player] VidLink error detected, switching to backup player');
-                    this.switchToBackupPlayer();
-                }
-            }
-        });
-    
-        // Add "Try with Server 02" button after timeout
-        setTimeout(() => {
-            if (this.currentPlayer === 'vidlink') {
-                this.addAlternatePlayerButton();
-            }
-        }, 5000);
-    },
-    
-    addAlternatePlayerButton() {
-        const toolbar = document.querySelector('.video-toolbar');
-        if (toolbar && !document.getElementById('btn-alternate-player')) {
-            const altBtn = document.createElement('button');
-            altBtn.id = 'btn-alternate-player';
-            altBtn.className = 'video-toolbar-btn';
-            altBtn.innerHTML = \`
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M23 7l-7 5 7 5V7z"/>
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                </svg>
-                Try with Server 02
-            \`;
-            altBtn.onclick = () => this.switchToBackupPlayer();
-    
-            const fullscreenBtn = document.getElementById('btn-fullscreen');
-            if (fullscreenBtn) {
-                toolbar.insertBefore(altBtn, fullscreenBtn);
+    switchServer(serverId) {
+        this.currentPlayer = serverId;
+
+        // Update active class on pill buttons
+        const buttons = document.querySelectorAll('.server-pill-btn');
+        buttons.forEach(btn => {
+            if (btn.dataset.serverId === serverId) {
+                btn.classList.add('active');
             } else {
-                toolbar.appendChild(altBtn);
+                btn.classList.remove('active');
             }
-        }
-    },
-    
-    switchToBackupPlayer() {
-        if (this.currentPlayer === 'backup') return;
-    
-        const iframe = document.getElementById('video-player-iframe');
-        if (iframe && this.mediaId) {
-            const backupUrl = this.buildBackupPlayerUrl();
-            console.log('[Player] Switching to backup player:', backupUrl);
-            iframe.src = backupUrl;
-            this.currentPlayer = 'backup';
-    
-            const altBtn = document.getElementById('btn-alternate-player');
-            if (altBtn) {
-                altBtn.innerHTML = \`
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="23 4 23 10 17 10"/>
-                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                    </svg>
-                    Switch back to Server 01
-                \`;
-                altBtn.onclick = () => this.switchToVidLink();
-            }
-        }
-    },
-    
-    switchToVidLink() {
-        if (this.currentPlayer === 'vidlink') return;
-    
-        const iframe = document.getElementById('video-player-iframe');
-        if (iframe && this.mediaId) {
-            const playerUrl = this.buildPlayerUrl();
-            console.log('[Player] Switching back to VidLink:', playerUrl);
-            iframe.src = playerUrl;
-            this.currentPlayer = 'vidlink';
-    
-            const altBtn = document.getElementById('btn-alternate-player');
-            if (altBtn) {
-                altBtn.innerHTML = \`
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 7l-7 5 7 5V7z"/>
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-                    </svg>
-                    Try with Server 02
-                \`;
-                altBtn.onclick = () => this.switchToBackupPlayer();
-            }
-        }
-    },
-    */
-
-    buildPlayerUrl() {
-        const baseUrl = this.mediaType === 'tv'
-            ? `https://vidlink.pro/tv/${this.mediaId}/${this.currentSeason}/${this.currentEpisode}`
-            : `https://vidlink.pro/movie/${this.mediaId}`;
-
-        const params = new URLSearchParams({
-            primaryColor: '4CAF50',
-            secondaryColor: '1a1a1a',
-            iconColor: 'ffffff',
-            icons: 'default',
-            player: 'jw',
-            title: 'true',
-            poster: 'true',
-            autoplay: 'true',
-            nextbutton: 'false',
         });
 
-        return `${baseUrl}?${params.toString()}`;
+        if (this.isPlaying) {
+            const iframe = document.getElementById('video-player-iframe');
+            if (iframe) {
+                const playerUrl = this.buildPlayerUrl(serverId);
+                console.log(`[Player] Switching server to ${serverId}:`, playerUrl);
+                iframe.src = playerUrl;
+            }
+        } else {
+            this.handlePlay();
+        }
     },
 
-    /* Server 2 Disabled
-    buildBackupPlayerUrl() {
-        if (this.mediaType === 'tv') {
-            return `https://vidsrc.me/embed/tv?tmdb=${this.mediaId}&season=${this.currentSeason}&episode=${this.currentEpisode}`;
-        }
-        return `https://vidsrc.me/embed/movie?tmdb=${this.mediaId}`;
+    buildPlayerUrl(serverId) {
+        const targetId = serverId || this.currentPlayer || 'vidnest';
+        const server = this.servers.find(s => s.id === targetId) || this.servers[0];
+        return server.getUrl(this.mediaType, this.mediaId, this.currentSeason, this.currentEpisode);
     },
-    */
 
     /**
      * Search for available torrents
