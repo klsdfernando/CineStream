@@ -141,16 +141,20 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    padding: 4px;
+    padding: 5px;
     border-radius: var(--radius-full);
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    overflow: visible;
 }
 
 .home-seg-btn {
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     border: none;
     background: transparent;
@@ -158,10 +162,13 @@
     font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    padding: 8px 18px;
+    line-height: 1;
+    height: 34px;
+    padding: 0 18px;
     border-radius: var(--radius-full);
     cursor: pointer;
     white-space: nowrap;
+    box-sizing: border-box;
     transition:
         color 0.3s cubic-bezier(0.22, 1, 0.36, 1),
         background 0.3s cubic-bezier(0.22, 1, 0.36, 1),
@@ -408,7 +415,8 @@ body.nav-solid .main-content {
     }
 
     .home-seg-btn {
-        padding: 7px 12px;
+        height: 32px;
+        padding: 0 14px;
         font-size: 12px;
     }
 

@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize titlebar controls
     initTitlebar();
 
+    // Initialize brand loader
+    if (window.AppLoader) AppLoader.init();
+
     // Initialize user auth state
     updateUserUI();
 

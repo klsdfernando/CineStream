@@ -9,6 +9,7 @@ const HeroCarousel = {
     _items: [],
     _root: null,
     _isHoveringRail: false,
+    _onResize: null,
 
     /**
      * @param {Object} options
@@ -107,11 +108,10 @@ const HeroCarousel = {
             poster.type = 'button';
             poster.className = `home-hero-poster${i === 0 ? ' active' : ''}`;
             poster.dataset.index = String(i);
-            poster.title = item.title || '';
+            poster.setAttribute('aria-label', item.title || `Slide ${i + 1}`);
             poster.innerHTML = item.poster
                 ? `<img src="${item.poster}" alt="${this._escape(item.title || '')}" loading="lazy">`
                 : `<span class="home-hero-poster-fallback">${this._escape((item.title || '?').charAt(0))}</span>`;
-
             poster.addEventListener('mouseenter', () => this.preview(i));
             poster.addEventListener('focus', () => this.preview(i));
             poster.addEventListener('click', () => this.goTo(i, { commit: true }));
@@ -148,6 +148,8 @@ const HeroCarousel = {
         });
 
         this._root = root;
+        this._onResize = () => this._fitTitle();
+        window.addEventListener('resize', this._onResize);
         this._renderContent({ animate: false });
         this.resume();
         return root;
@@ -204,6 +206,10 @@ const HeroCarousel = {
     destroy() {
         this.pause();
         this._clearHoverTimer();
+        if (this._onResize) {
+            window.removeEventListener('resize', this._onResize);
+            this._onResize = null;
+        }
         this._items = [];
         this._root = null;
         this._index = 0;
@@ -252,6 +258,7 @@ const HeroCarousel = {
                 ${item.rating ? `<span class="home-hero-rating">★ ${this._escape(String(item.rating))}</span>` : ''}
             `;
             this._root.querySelector('.home-hero-overview').textContent = this._truncate(item.overview || '', 160);
+            this._fitTitle();
         };
 
         if (!animate) {
@@ -268,6 +275,40 @@ const HeroCarousel = {
             content.classList.remove('is-switching');
             content.classList.add('is-ready');
         }, 180);
+    },
+
+    /**
+     * Shrink hero title font until it fits within 2 lines.
+     */
+    _fitTitle() {
+        if (!this._root) return;
+        const title = this._root.querySelector('.home-hero-title');
+        if (!title || !title.textContent) return;
+
+        const styles = window.getComputedStyle(title);
+        const lineHeightRatio = parseFloat(styles.lineHeight) / parseFloat(styles.fontSize) || 1.05;
+        const maxPx = Math.min(64, Math.max(28, Math.round(window.innerWidth * 0.055)));
+        const minPx = 22;
+
+        // Measure without clamp so scrollHeight reflects true wrapped height
+        title.style.display = 'block';
+        title.style.webkitLineClamp = 'unset';
+        title.style.overflow = 'visible';
+        title.style.fontSize = `${maxPx}px`;
+
+        let size = maxPx;
+        const maxHeight = () => size * lineHeightRatio * 2 + 1;
+
+        while (size > minPx && title.scrollHeight > maxHeight()) {
+            size -= 1;
+            title.style.fontSize = `${size}px`;
+        }
+
+        // Restore 2-line clamp for very long titles that still overflow at min size
+        title.style.display = '-webkit-box';
+        title.style.webkitBoxOrient = 'vertical';
+        title.style.webkitLineClamp = '2';
+        title.style.overflow = 'hidden';
     },
 
     _matchPercent(rating) {

@@ -15,15 +15,20 @@ const router = {
      */
     async navigate(page, params = {}) {
         this.closeProfileMenu();
+        AppLoader.show();
 
-        // Save current state to history
-        this.history.push({ page: this.currentPage, params: this.currentParams });
+        try {
+            // Save current state to history
+            this.history.push({ page: this.currentPage, params: this.currentParams });
 
-        this.currentPage = page;
-        this.currentParams = params;
+            this.currentPage = page;
+            this.currentParams = params;
 
-        await this.render();
-        this.updateNav();
+            await this.render();
+            this.updateNav();
+        } finally {
+            AppLoader.hide();
+        }
     },
 
     /**
@@ -31,14 +36,22 @@ const router = {
      */
     async back() {
         this.closeProfileMenu();
-        if (this.history.length > 0) {
-            const previous = this.history.pop();
-            this.currentPage = previous.page;
-            this.currentParams = previous.params;
-            await this.render();
-            this.updateNav();
-        } else {
-            await this.navigate('home');
+        AppLoader.show();
+        try {
+            if (this.history.length > 0) {
+                const previous = this.history.pop();
+                this.currentPage = previous.page;
+                this.currentParams = previous.params;
+                await this.render();
+                this.updateNav();
+            } else {
+                this.currentPage = 'home';
+                this.currentParams = {};
+                await this.render();
+                this.updateNav();
+            }
+        } finally {
+            AppLoader.hide();
         }
     },
 
@@ -47,14 +60,8 @@ const router = {
      */
     async render() {
         const mainContent = document.getElementById('main-content');
-
-        // Show loading
-        mainContent.innerHTML = `
-      <div class="loading-screen">
-        <div class="loading-spinner"></div>
-        <p>Loading...</p>
-      </div>
-    `;
+        // Keep content empty while global brand loader is shown
+        mainContent.innerHTML = '';
 
         // Render page based on current route
         switch (this.currentPage) {

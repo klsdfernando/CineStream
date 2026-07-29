@@ -54,7 +54,12 @@ const HomePage = {
         }
         this.currentView = view;
         this.syncTopToggle();
-        await this.loadCurrentView();
+        AppLoader.show();
+        try {
+            await this.loadCurrentView();
+        } finally {
+            AppLoader.hide();
+        }
     },
 
     async loadCurrentView() {
@@ -71,12 +76,7 @@ const HomePage = {
         const sectionsContainer = document.getElementById('home-sections');
         if (!sectionsContainer) return;
         HeroCarousel.destroy();
-        sectionsContainer.innerHTML = `
-            <div class="loading-screen">
-                <div class="loading-spinner"></div>
-                <p>Loading movies...</p>
-            </div>
-        `;
+        sectionsContainer.innerHTML = '';
 
         try {
             const [trendingData, popularData, topRatedData, upcomingData] = await Promise.all([
@@ -152,12 +152,7 @@ const HomePage = {
         const sectionsContainer = document.getElementById('home-sections');
         if (!sectionsContainer) return;
         HeroCarousel.destroy();
-        sectionsContainer.innerHTML = `
-            <div class="loading-screen">
-                <div class="loading-spinner"></div>
-                <p>Loading TV series...</p>
-            </div>
-        `;
+        sectionsContainer.innerHTML = '';
 
         try {
             const [trendingData, popularData, topRatedData, airingData] = await Promise.all([
@@ -232,12 +227,7 @@ const HomePage = {
         const sectionsContainer = document.getElementById('home-sections');
         if (!sectionsContainer) return;
         HeroCarousel.destroy();
-        sectionsContainer.innerHTML = `
-            <div class="loading-screen">
-                <div class="loading-spinner"></div>
-                <p>Loading anime...</p>
-            </div>
-        `;
+        sectionsContainer.innerHTML = '';
 
         try {
             const [trendingData, topRatedData, airingData, popularData] = await Promise.all([

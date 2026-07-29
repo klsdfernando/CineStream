@@ -154,15 +154,24 @@
     <!-- Main Content -->
     <main class="main-content" id="main-content">
       <!-- Dynamic content will be loaded here -->
-      <div class="loading-screen" id="loading-screen">
-        <div class="loading-spinner"></div>
-        <p>Loading...</p>
-      </div>
     </main>
+
+    <!-- Global centered brand loader -->
+    <div class="app-loader is-visible" id="app-loader" aria-hidden="false" aria-busy="true">
+      <div class="app-loader-inner">
+        <div class="app-loader-brand" aria-label="CineStream">
+          <span class="app-loader-cine">Cine</span><span class="app-loader-stream">Stream</span>
+        </div>
+        <div class="app-loader-bar" aria-hidden="true">
+          <span class="app-loader-bar-fill"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
   <script src="js/api.js"></script>
+  <script src="js/components/appLoader.js"></script>
   <script src="js/components/movieCard.js"></script>
   <script src="js/components/carousel.js"></script>
   <script src="js/components/heroCarousel.js"></script>
