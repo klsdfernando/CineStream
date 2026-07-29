@@ -28,16 +28,7 @@ initDatabase();
 
 // Create Fastify instance
 const fastify = Fastify({
-    logger: {
-        level: 'info',
-        transport: {
-            target: 'pino-pretty',
-            options: {
-                translateTime: 'HH:MM:ss Z',
-                ignore: 'pid,hostname',
-            },
-        },
-    },
+    logger: true,
     bodyLimit: 10 * 1024 * 1024, // 10MB limit for base64 images
 });
 

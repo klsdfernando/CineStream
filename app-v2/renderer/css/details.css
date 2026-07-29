@@ -1,0 +1,433 @@
+/* ============================================
+   Movie Details Page
+   ============================================ */
+.details-page {
+    position: relative;
+}
+
+/* Back Button */
+.back-button {
+    position: fixed;
+    top: calc(var(--titlebar-height) + 16px);
+    left: calc(var(--sidebar-width) + 16px);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-primary);
+    cursor: pointer;
+    z-index: 50;
+    transition: all var(--transition-fast);
+}
+
+.back-button:hover {
+    background-color: var(--bg-tertiary);
+    transform: translateX(-4px);
+}
+
+.back-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Hero Section */
+.details-hero {
+    position: relative;
+    height: 400px;
+    overflow: hidden;
+}
+
+.details-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.details-backdrop-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+            rgba(10, 10, 10, 0.3) 0%,
+            rgba(10, 10, 10, 0.6) 50%,
+            var(--bg-primary) 100%);
+}
+
+.details-hero-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 40px;
+}
+
+.details-logo {
+    max-width: 400px;
+    max-height: 150px;
+    object-fit: contain;
+}
+
+.details-title-fallback {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* Info Section */
+.details-content {
+    padding: var(--content-padding);
+    padding-top: 0;
+}
+
+.details-info {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 40px;
+    margin-top: -60px;
+    position: relative;
+    z-index: 10;
+    align-items: flex-start;
+}
+
+.details-poster {
+    flex-shrink: 0;
+    width: 280px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    background-color: var(--bg-tertiary);
+    align-self: flex-start;
+}
+
+.details-poster img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-lg);
+}
+
+.details-meta {
+    flex: 1;
+    padding-top: 60px;
+}
+
+.details-badge {
+    margin-bottom: 12px;
+}
+
+.details-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.details-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.details-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.details-meta-item svg {
+    width: 16px;
+    height: 16px;
+}
+
+.details-meta-item.rating {
+    color: var(--accent-yellow);
+}
+
+.details-meta-item.rating svg {
+    fill: var(--accent-yellow);
+}
+
+.details-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.details-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.details-storyline {
+    margin-bottom: 40px;
+}
+
+.details-storyline h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.details-storyline h3::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background-color: var(--accent-green);
+    border-radius: 2px;
+}
+
+.details-storyline p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    max-width: 700px;
+}
+
+/* Cast Section */
+.details-section {
+    margin-bottom: 40px;
+}
+
+.details-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.details-section-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background-color: var(--accent-green);
+    border-radius: 2px;
+}
+
+.cast-row {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.cast-row::-webkit-scrollbar {
+    display: none;
+}
+
+/* Horizontal Movie Grid (More Like This) */
+.movie-grid-horizontal {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.movie-grid-horizontal::-webkit-scrollbar {
+    display: none;
+}
+
+.movie-grid-horizontal .movie-card {
+    flex-shrink: 0;
+    width: 140px;
+}
+
+/* Similar Movies */
+.similar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.similar-btn {
+    font-size: 14px;
+    color: var(--text-secondary);
+    background-color: var(--bg-tertiary);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.similar-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* Photos Grid */
+.photos-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+}
+
+.photos-grid::-webkit-scrollbar {
+    display: none;
+}
+
+.photo-card {
+    flex-shrink: 0;
+    width: 260px;
+    aspect-ratio: 16/9;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    background-color: var(--bg-tertiary);
+}
+
+.photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal);
+}
+
+.photo-card:hover img {
+    transform: scale(1.05);
+}
+
+.photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.photo-card:hover .photo-overlay {
+    opacity: 1;
+}
+
+.photo-overlay svg {
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+/* Lightbox */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background-color: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+}
+
+.lightbox.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-content img {
+    max-width: 100%;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: var(--radius-md);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 10001;
+}
+
+.lightbox-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.lightbox-close svg {
+    width: 24px;
+    height: 24px;
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.lightbox-nav:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-nav svg {
+    width: 24px;
+    height: 24px;
+}
+
+.lightbox-prev {
+    left: 20px;
+}
+
+.lightbox-next {
+    right: 20px;
+}

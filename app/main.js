@@ -52,7 +52,7 @@ const BLOCKED_DOMAINS = [
     'clickadu.com',
     'hilltopads.net',
     'adsterra.com',
-    'a]d-maven.com',
+    'ad-maven.com',
     'adcash.com'
 ];
 

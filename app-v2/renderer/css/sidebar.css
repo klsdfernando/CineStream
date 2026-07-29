@@ -1,0 +1,135 @@
+/* ============================================
+   Sidebar Navigation
+   ============================================ */
+.sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    height: 100%;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: width var(--transition-normal);
+    overflow: hidden;
+    z-index: 100;
+}
+
+.sidebar:hover {
+    width: var(--sidebar-expanded);
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 8px;
+    gap: 4px;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-item:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sidebar-item.active {
+    background-color: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.sidebar-item.active .sidebar-icon svg {
+    stroke: var(--bg-primary);
+}
+
+.sidebar-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.sidebar-label {
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all var(--transition-fast);
+}
+
+.sidebar:hover .sidebar-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Bottom Section - Report + User Profile at bottom */
+.sidebar-bottom {
+    margin-top: auto;
+    padding: 16px 8px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-bottom .sidebar-item {
+    position: relative;
+}
+
+.sidebar-bottom .user-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebar-bottom .user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sidebar-bottom .user-avatar svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sidebar-bottom .sidebar-item.logged-in .user-avatar {
+    border: 2px solid var(--accent-green);
+    width: 22px;
+    height: 22px;
+}
+
+/* User avatar pulse animation when logged in */
+.sidebar-bottom .sidebar-item.logged-in .user-avatar::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    border: 2px solid var(--bg-sidebar);
+}
