@@ -60,7 +60,7 @@ const MovieCard = {
 
       <!-- Expanded Wider Pop-Out Hover Card -->
       <div class="movie-card-popout">
-        <!-- Top 16:9 Banner Header (Vibrant & Visible) -->
+        <!-- Top 16:9 Banner Header (Single Crisp Image) -->
         <div class="popout-banner">
           ${bannerUrl ? `<img src="${bannerUrl}" alt="${movie.title}" class="popout-banner-img">` : ''}
           <div class="popout-banner-gradient"></div>
@@ -71,10 +71,6 @@ const MovieCard = {
             </svg>
           </div>
         </div>
-
-        <!-- Ambient Background Poster Layer (Higher Opacity) -->
-        ${bgPoster ? `<div class="popout-bg-poster" style="background-image: url('${bgPoster}');"></div>` : ''}
-        <div class="popout-bg-gradient"></div>
 
         <!-- Popout Body Details -->
         <div class="popout-body">
