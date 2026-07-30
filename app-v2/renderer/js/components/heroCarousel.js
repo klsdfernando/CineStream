@@ -231,10 +231,14 @@ const HeroCarousel = {
         this._root.querySelectorAll('.home-hero-dot').forEach((el, i) => {
             el.classList.toggle('active', i === this._index);
         });
+
+        const track = this._root.querySelector('.home-hero-rail-track');
         this._root.querySelectorAll('.home-hero-poster').forEach((el, i) => {
-            el.classList.toggle('active', i === this._index);
-            if (scrollPoster && i === this._index) {
-                el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            const isActive = i === this._index;
+            el.classList.toggle('active', isActive);
+            if (scrollPoster && isActive && track) {
+                const targetLeft = el.offsetLeft - (track.clientWidth / 2) + (el.offsetWidth / 2);
+                track.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
             }
         });
     },
