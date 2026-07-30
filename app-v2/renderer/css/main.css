@@ -31,7 +31,7 @@
   --sidebar-width: 70px;
   --sidebar-expanded: 180px;
   --titlebar-height: 38px;
-  --content-padding: 24px;
+  --content-padding: clamp(28px, 4.5vw, 56px);
   
   /* Border Radius */
   --radius-sm: 4px;

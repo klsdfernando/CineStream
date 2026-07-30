@@ -90,7 +90,7 @@ function registerTmdbHandlers() {
         return getCachedOrFetch(`person_${id}`, () => tmdb.getPersonDetails(id), CACHE_TTL.movieDetails);
     });
     ipcMain.handle('tmdb:personCredits', async (_, id) => {
-        return getCachedOrFetch(`person_credits_${id}`, () => tmdb.getPersonCombinedCredits(id), CACHE_TTL.movieDetails);
+        return getCachedOrFetch(`person_credits_v2_${id}`, () => tmdb.getPersonCombinedCredits(id), CACHE_TTL.movieDetails);
     });
     ipcMain.handle('tmdb:personMovies', async (_, id) => {
         return getCachedOrFetch(`person_movies_${id}`, () => tmdb.getPersonMovieCredits(id), CACHE_TTL.movieDetails);

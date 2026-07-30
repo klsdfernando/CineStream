@@ -458,11 +458,20 @@ async function getPersonCombinedCredits(personId) {
         }).slice(0, 50).map(item => {
             const isMovie = item.media_type === 'movie';
             return {
-                id: item.id, title: isMovie ? item.title : item.name,
+                id: item.id,
+                title: isMovie ? item.title : item.name,
+                overview: item.overview || '',
                 poster: getImageUrl(item.poster_path, 'w342'),
-                year: isMovie ? (item.release_date ? new Date(item.release_date).getFullYear() : null) : (item.first_air_date ? new Date(item.first_air_date).getFullYear() : null),
+                posterSmall: getImageUrl(item.poster_path, 'w185'),
+                backdrop: getImageUrl(item.backdrop_path, 'w780'),
+                backdropOriginal: getImageUrl(item.backdrop_path, 'original'),
+                year: isMovie
+                    ? (item.release_date ? new Date(item.release_date).getFullYear() : null)
+                    : (item.first_air_date ? new Date(item.first_air_date).getFullYear() : null),
                 rating: item.vote_average ? parseFloat(item.vote_average.toFixed(1)) : null,
-                character: item.character, mediaType: item.media_type,
+                voteCount: item.vote_count || 0,
+                character: item.character,
+                mediaType: item.media_type,
             };
         }) || [],
     };
