@@ -1,285 +1,292 @@
-/* Person/Actor Page Styles */
-
+/* ============================================
+   Person / Actor Details Page - 2-Column Layout
+   ============================================ */
 .person-page {
-    padding: 40px;
-    padding-top: 60px;
-    max-width: 1400px;
-    margin: 0 auto;
+    position: relative;
+    padding-bottom: 60px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-/* Person Header */
-.person-header {
-    display: flex;
-    gap: 32px;
-    margin-bottom: 40px;
-    align-items: flex-start;
+/* 1. Ambient Hero Header Section */
+.person-hero {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    overflow: hidden;
+    background-color: #0a0a0c;
 }
 
-.person-avatar-container {
-    flex-shrink: 0;
-}
-
-.person-avatar {
-    width: 200px;
-    height: 300px;
+.person-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: var(--radius-lg);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    object-position: center 25%;
+    filter: brightness(0.65) blur(10px);
+    transform: scale(1.1);
 }
 
-.person-avatar-placeholder {
-    width: 200px;
-    height: 300px;
+.person-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(10, 10, 10, 0.2) 0%,
+        rgba(10, 10, 10, 0.6) 50%,
+        var(--bg-primary) 100%
+    );
+}
+
+/* 2. Main 2-Column Content Grid */
+.person-content-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 36px;
+    padding: 0 var(--content-padding);
+    margin-top: -140px;
+    position: relative;
+    z-index: 20;
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Column 1: Sidebar Profile & Info Card --- */
+.person-col-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.person-poster-wrap {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+    position: relative;
+    aspect-ratio: 2/3;
+}
+
+.person-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.person-poster-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--bg-tertiary);
-    border-radius: var(--radius-lg);
+    background: var(--bg-tertiary);
     color: var(--text-muted);
 }
 
-.person-avatar-placeholder svg {
-    width: 64px;
-    height: 64px;
+.person-poster-placeholder svg {
+    width: 56px;
+    height: 56px;
 }
 
-.person-info {
-    flex: 1;
-    padding-top: 16px;
+/* Sidebar Personal Info Card */
+.person-info-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.person-name {
-    font-size: 36px;
+.info-card-title {
+    font-size: 16px;
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
 }
 
-.person-known-for {
-    display: inline-block;
-    background-color: var(--accent-green);
-    color: #000;
-    padding: 4px 12px;
-    border-radius: var(--radius-full);
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 20px;
+.info-kv-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.person-meta {
+.info-kv-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.info-kv-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.info-kv-value {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+/* --- Column 2: Main Details & Filmography --- */
+.person-col-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding-top: 0;
+}
+
+.person-main-header {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-bottom: 4px;
 }
 
-.person-meta-item {
+.person-main-title {
+    font-size: 38px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.person-header-badges {
     display: flex;
     align-items: center;
     gap: 10px;
-    color: var(--text-secondary);
-    font-size: 14px;
+    flex-wrap: wrap;
 }
 
-.person-meta-item svg {
-    width: 18px;
-    height: 18px;
-    color: var(--accent-green);
-    flex-shrink: 0;
+.person-dept-badge {
+    background: var(--accent-green);
+    color: #000000;
+    padding: 4px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 0 16px var(--accent-green-glow);
 }
 
-.person-meta-item.deceased svg {
-    color: var(--text-muted);
+.person-pop-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(250, 204, 21, 0.15);
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    color: #facc15;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
 }
 
-/* Person Sections */
-.person-section {
-    margin-bottom: 40px;
+.person-pop-badge svg {
+    width: 13px;
+    height: 13px;
+    fill: #facc15;
 }
 
-/* Biography */
-.person-biography {
+/* Person Section Cards */
+.person-section-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.biography-content {
     position: relative;
 }
 
 .biography-text {
-    font-size: 15px;
+    font-size: 14.5px;
     line-height: 1.8;
     color: var(--text-secondary);
     white-space: pre-wrap;
 }
 
-/* Photos Grid for Person */
-.person-section .photos-grid {
-    display: flex;
+/* Person Photos Thumbnails Grid */
+.person-photos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 8px;
-    scrollbar-width: none;
 }
 
-.person-section .photos-grid::-webkit-scrollbar {
-    display: none;
-}
-
-.person-photo {
-    width: 160px;
-    aspect-ratio: 2/3;
-}
-
-.person-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Filmography Grid */
-.filmography-grid {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scrollbar-width: none;
-}
-
-.filmography-grid::-webkit-scrollbar {
-    display: none;
-}
-
-.filmography-card {
-    flex-shrink: 0;
-    width: 150px;
-    cursor: pointer;
-    transition: transform var(--transition-fast);
-}
-
-.filmography-card:hover {
-    transform: translateY(-4px);
-}
-
-.filmography-poster {
-    position: relative;
+.person-photo-thumb {
     aspect-ratio: 2/3;
     border-radius: var(--radius-md);
     overflow: hidden;
-    background-color: var(--bg-tertiary);
-    margin-bottom: 10px;
+    cursor: pointer;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.filmography-poster img {
+.person-photo-thumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.3s ease;
 }
 
-.filmography-poster .poster-placeholder {
-    width: 100%;
-    height: 100%;
+.person-photo-thumb:hover {
+    border-color: var(--accent-green);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.person-photo-thumb:hover img {
+    transform: scale(1.08);
+}
+
+/* Filmography Movies Carousel inside Person Page */
+.person-col-main .movies-carousel {
+    position: relative;
+}
+
+.person-col-main .movies-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
+    gap: 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding-top: 85px;
+    padding-bottom: 95px;
+    margin-top: -85px;
+    margin-bottom: -95px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    border: none;
+    background: transparent;
 }
 
-.filmography-poster .poster-placeholder svg {
-    width: 40px;
-    height: 40px;
+.person-col-main .movies-row::-webkit-scrollbar {
+    display: none;
 }
 
-.filmography-overlay {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-}
-
-.filmography-overlay .media-type-badge {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.filmography-overlay .media-type-badge.movie {
-    background-color: var(--accent-green);
-    color: #000;
-}
-
-.filmography-overlay .media-type-badge.tv {
-    background-color: #8b5cf6;
-    color: #fff;
-}
-
-.filmography-info {
-    padding: 0 4px;
-}
-
-.filmography-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.filmography-character {
-    font-size: 12px;
-    color: var(--text-muted);
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 6px;
-}
-
-.filmography-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-.filmography-rating {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    color: #fbbf24;
-}
-
-.filmography-rating svg {
-    width: 12px;
-    height: 12px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .person-page {
-        padding: 20px;
-        padding-top: 50px;
+/* Responsive Media Queries */
+@media (max-width: 900px) {
+    .person-content-grid {
+        grid-template-columns: 1fr;
+        margin-top: -60px;
     }
-
-    .person-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-
-    .person-avatar {
-        width: 160px;
-        height: 240px;
-    }
-
-    .person-name {
-        font-size: 28px;
-    }
-
-    .person-meta {
-        align-items: center;
-    }
-
-    .filmography-card {
-        width: 130px;
+    .person-col-main {
+        padding-top: 0;
     }
 }

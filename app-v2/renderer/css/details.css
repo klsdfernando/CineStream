@@ -637,10 +637,10 @@
     gap: 16px;
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding-top: 75px;
-    padding-bottom: 85px;
-    margin-top: -75px;
-    margin-bottom: -85px;
+    padding-top: 85px;
+    padding-bottom: 95px;
+    margin-top: -85px;
+    margin-bottom: -95px;
     scrollbar-width: none;
     -ms-overflow-style: none;
     border: none;
