@@ -6,8 +6,8 @@ const router = {
     currentPage: 'home',
     currentParams: {},
     history: [],
-    // Keep the video player below a solid header; only visual pages use nav overlay.
-    overlayPages: ['home', 'details'],
+    // Only home page uses nav overlay. Details and other pages use solid header.
+    overlayPages: ['home'],
 
     /**
      * Navigate to a page

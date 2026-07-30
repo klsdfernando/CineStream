@@ -626,56 +626,29 @@
     max-width: 1500px;
     margin: 48px auto 0;
     padding: 0 var(--content-padding);
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
 }
 
-.details-bottom-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.details-bottom-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-/* Horizontal Movie Grid Container */
-.similar-movies-container {
+.details-bottom-section .movies-carousel {
     position: relative;
-    width: 100%;
-    overflow: visible;
 }
 
-.movie-grid-horizontal {
+.details-bottom-section .movies-row {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     overflow-x: auto;
-    padding: 30px 4px 50px 4px;
-    margin-top: -15px;
-    margin-bottom: -20px;
     scroll-behavior: smooth;
+    padding-top: 75px;
+    padding-bottom: 85px;
+    margin-top: -75px;
+    margin-bottom: -85px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     border: none;
     background: transparent;
 }
 
-.movie-grid-horizontal::-webkit-scrollbar {
-    height: 6px;
-}
-
-.movie-grid-horizontal::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
-}
-
-.movie-grid-horizontal .movie-card {
-    flex: 0 0 170px;
-    width: 170px;
+.details-bottom-section .movies-row::-webkit-scrollbar {
+    display: none;
 }
 
 /* --------------------------------------------

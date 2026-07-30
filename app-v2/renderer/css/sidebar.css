@@ -36,10 +36,13 @@
 }
 
 .topnav--solid {
-    background: rgba(8, 8, 8, 0.78);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    border: none;
+    position: fixed;
+    top: var(--titlebar-height, 38px);
+    background: rgba(10, 10, 14, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 /* Brand — Cine (green) + Stream (white) */

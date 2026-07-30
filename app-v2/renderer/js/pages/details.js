@@ -321,13 +321,31 @@ const DetailsPage = {
           </div>
         </div>
 
-        <!-- 3. Bottom Section: Similar Movies -->
+        <!-- 3. Bottom Section: Similar Movies Carousel -->
         <div class="details-bottom-section">
-          <div class="details-bottom-header">
-            <h2 class="details-bottom-title">Similar Content</h2>
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="section-icon clapperboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4Z"/>
+                  <path d="m4 11-.88-2.87a2 2 0 0 1 1.33-2.5l11.48-3.5a2 2 0 0 1 2.5 1.32l.87 2.87L4 11.01Z"/>
+                </svg>
+              </span>
+              Similar Content
+            </h2>
           </div>
-          <div class="similar-movies-container">
-            <div class="movie-grid-horizontal" id="similar-movies"></div>
+          <div class="movies-carousel">
+            <button class="carousel-nav prev" id="similar-prev" aria-label="Previous">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <div class="movies-row" id="similar-movies"></div>
+            <button class="carousel-nav next" id="similar-next" aria-label="Next">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -391,6 +409,13 @@ const DetailsPage = {
     document.getElementById('btn-share-pill')?.addEventListener('click', () => api.showUnderDevelopmentToast());
     document.getElementById('btn-add-list')?.addEventListener('click', () => api.showUnderDevelopmentToast());
     document.getElementById('btn-left-report')?.addEventListener('click', () => router.navigate('report'));
+
+    // Carousel Scroll Handlers
+    const prevBtn = document.getElementById('similar-prev');
+    const nextBtn = document.getElementById('similar-next');
+    const row = document.getElementById('similar-movies');
+    if (prevBtn && row) prevBtn.addEventListener('click', () => row.scrollBy({ left: -600, behavior: 'smooth' }));
+    if (nextBtn && row) nextBtn.addEventListener('click', () => row.scrollBy({ left: 600, behavior: 'smooth' }));
 
     // Similar Content Container
     const similarContainer = document.getElementById('similar-movies');
