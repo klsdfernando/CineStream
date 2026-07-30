@@ -542,7 +542,10 @@
     gap: 16px;
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding-bottom: 8px;
+    padding-top: 75px;
+    padding-bottom: 80px;
+    margin-top: -75px;
+    margin-bottom: -80px;
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
