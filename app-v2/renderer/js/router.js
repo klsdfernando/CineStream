@@ -166,6 +166,12 @@ const router = {
             topnav.classList.toggle('topnav--overlay', useOverlay);
             topnav.classList.toggle('topnav--solid', !useOverlay);
         }
+        
+        const homeToggle = document.getElementById('topnav-home-toggle');
+        if (homeToggle) {
+            homeToggle.style.display = (page === 'home') ? 'flex' : 'none';
+        }
+
         document.body.classList.toggle('nav-solid', !useOverlay);
         document.body.dataset.page = page;
 
