@@ -12,6 +12,10 @@ const WatchPage = {
     currentSeason: 1,
     currentEpisode: 1,
     seasonData: null,
+    // Custom subtitle state
+    customSubtitles: [],
+    activeSubtitleId: null,
+    pendingSubtitleFile: null,
 
     servers: [
         {
@@ -21,26 +25,6 @@ const WatchPage = {
             getUrl: (type, id, s, e) => type === 'tv'
                 ? `https://vidnest.fun/tv/${id}/${s}/${e}`
                 : `https://vidnest.fun/movie/${id}`
-        },
-        {
-            id: 'vidlink',
-            name: 'VidLink',
-            getUrl: (type, id, s, e) => {
-                const baseUrl = type === 'tv'
-                    ? `https://vidlink.pro/tv/${id}/${s}/${e}`
-                    : `https://vidlink.pro/movie/${id}`;
-                const params = new URLSearchParams({
-                    primaryColor: '4CAF50',
-                    secondaryColor: '1a1a1a',
-                    iconColor: 'ffffff',
-                    player: 'jw',
-                    title: 'true',
-                    poster: 'true',
-                    autoplay: 'true',
-                    nextbutton: 'false',
-                });
-                return `${baseUrl}?${params.toString()}`;
-            }
         },
         {
             id: 'vidrock',
@@ -89,6 +73,9 @@ const WatchPage = {
     async render(params) {
         this.isPlaying = false;
         this.currentPlayer = 'vidnest';
+        this.customSubtitles = [];
+        this.activeSubtitleId = null;
+        this.pendingSubtitleFile = null;
         // Support both old format (just id) and new format ({id, mediaType})
         if (typeof params === 'object') {
             this.mediaId = params.id;
@@ -209,33 +196,7 @@ const WatchPage = {
                     </div>
                 </div>
 
-                <!-- Video Toolbar -->
-                <div class="video-toolbar">
-                    <button class="video-toolbar-btn" id="btn-favorite">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        Add to Favorites
-                    </button>
-                    <!-- <button class="video-toolbar-btn" id="btn-lights">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 18h6M10 22h4M12 2v1M4.22 4.22l.71.71M1 12h1M4.22 19.78l.71-.71M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z"/>
-                        </svg>
-                        Turn off Light
-                    </button>
-                    <button class="video-toolbar-btn" id="btn-comments">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        Comments
-                    </button> -->
-                    <button class="video-toolbar-btn" id="btn-fullscreen" style="margin-left: auto;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-                        </svg>
-                        Fullscreen
-                    </button>
-                </div>
+                ${this.renderSubtitleBar()}
 
                 <!-- Download Section -->
                 <div class="download-section" id="download-section">
@@ -331,6 +292,12 @@ const WatchPage = {
                                 </svg>
                                 Dislike
                             </button>
+                            <button class="watch-action-btn favorite" id="btn-favorite">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Favorites
+                            </button>
                             <button class="watch-action-btn share" id="btn-share">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="18" cy="5" r="3"/>
@@ -340,12 +307,6 @@ const WatchPage = {
                                     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                                 </svg>
                                 Share
-                            </button>
-                            <button class="watch-action-btn save" id="btn-save-playlist">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                                </svg>
-                                Save to Playlist
                             </button>
                         </div>
                     </div>
@@ -366,6 +327,338 @@ const WatchPage = {
 
         // Search for available torrents
         this.searchTorrents();
+    },
+
+    // Google language codes offered for machine translation
+    translateLanguages: [
+        { code: 'si', name: 'Sinhala' },
+        { code: 'ta', name: 'Tamil' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'bn', name: 'Bengali' },
+        { code: 'ur', name: 'Urdu' },
+        { code: 'ar', name: 'Arabic' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'it', name: 'Italian' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'ru', name: 'Russian' },
+        { code: 'tr', name: 'Turkish' },
+        { code: 'id', name: 'Indonesian' },
+        { code: 'ms', name: 'Malay' },
+        { code: 'th', name: 'Thai' },
+        { code: 'vi', name: 'Vietnamese' },
+        { code: 'ja', name: 'Japanese' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh-CN', name: 'Chinese (Simplified)' },
+    ],
+
+    renderSubtitleBar() {
+        return `
+            <div class="subtitle-bar" id="subtitle-bar">
+                <div class="subtitle-bar-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                        <line x1="6" y1="14" x2="11" y2="14"/>
+                        <line x1="14" y1="14" x2="18" y2="14"/>
+                        <line x1="6" y1="10" x2="9" y2="10"/>
+                        <line x1="12" y1="10" x2="18" y2="10"/>
+                    </svg>
+                    <span>Custom Subtitles</span>
+                    <span class="subtitle-hint">Start playback first</span>
+                </div>
+
+                <div class="subtitle-bar-body" id="subtitle-bar-body">
+                    <div class="subtitle-group">
+                        <span class="subtitle-group-label">Upload a file</span>
+                        <div class="subtitle-bar-controls">
+                            <input type="file" id="subtitle-file-input" accept=".vtt,.srt,.txt" hidden>
+                            <button type="button" class="subtitle-btn-file" id="subtitle-pick-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                                <span id="subtitle-file-label">Choose file</span>
+                            </button>
+                            <input type="text" class="subtitle-name-input" id="subtitle-name-input" placeholder="Subtitle name (e.g. Sinhala)" maxlength="40">
+                            <button type="button" class="subtitle-btn-add" id="subtitle-add-btn" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Add to Player
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="subtitle-group">
+                        <span class="subtitle-group-label">
+                            Generate by translation
+                            <span class="subtitle-badge-exp">Experimental</span>
+                        </span>
+                        <div class="subtitle-bar-controls">
+                            <select class="subtitle-lang-select" id="subtitle-lang-select">
+                                ${this.translateLanguages.map(lang => `
+                                    <option value="${lang.code}">${lang.name}</option>
+                                `).join('')}
+                            </select>
+                            <button type="button" class="subtitle-btn-generate" id="subtitle-generate-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 8h9M9 4v4c0 4-2 6-5 7"/>
+                                    <path d="M10 12c1 3 3 5 6 6"/>
+                                    <path d="M14 20l4-9 4 9M15.5 17h5"/>
+                                </svg>
+                                Generate Subtitle
+                            </button>
+                            <span class="subtitle-generate-note">
+                                Translates the player's English track. Takes a minute or two.
+                            </span>
+                        </div>
+                        <div class="subtitle-progress" id="subtitle-progress">
+                            <div class="subtitle-progress-bar"><span id="subtitle-progress-fill"></span></div>
+                            <span class="subtitle-progress-text" id="subtitle-progress-text"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subtitle-status" id="subtitle-status"></div>
+                <div class="subtitle-track-list" id="subtitle-track-list"></div>
+            </div>
+        `;
+    },
+
+    setSubtitleProgress(percent, text) {
+        const wrap = document.getElementById('subtitle-progress');
+        const fill = document.getElementById('subtitle-progress-fill');
+        const label = document.getElementById('subtitle-progress-text');
+        if (!wrap) return;
+
+        if (percent === null) {
+            wrap.classList.remove('active');
+            return;
+        }
+        wrap.classList.add('active');
+        if (fill) fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+        if (label) label.textContent = text || '';
+    },
+
+    async generateSubtitle() {
+        if (!this.isPlaying) {
+            this.setSubtitleStatus('Press play on the video first, then generate.', 'error');
+            return;
+        }
+
+        const select = document.getElementById('subtitle-lang-select');
+        const btn = document.getElementById('subtitle-generate-btn');
+        const code = select?.value || 'si';
+        const language = this.translateLanguages.find(l => l.code === code);
+        const label = language ? `${language.name} (AI)` : code;
+
+        if (btn) btn.disabled = true;
+        this.setSubtitleStatus('Reading the player\'s subtitle list…', 'loading');
+        this.setSubtitleProgress(0, 'Starting…');
+
+        api.subtitles.removeGenerateProgress();
+        api.subtitles.onGenerateProgress((data) => {
+            if (data.phase === 'locating') {
+                this.setSubtitleProgress(2, 'Locating player…');
+            } else if (data.phase === 'downloading') {
+                this.setSubtitleProgress(6, `Downloading ${data.source || 'English'} track…`);
+            } else if (data.phase === 'translating') {
+                const pct = data.total ? 8 + Math.round((data.done / data.total) * 86) : 8;
+                this.setSubtitleProgress(pct, data.total ? `Translating ${data.done} / ${data.total} lines…` : 'Translating…');
+            } else if (data.phase === 'injecting') {
+                this.setSubtitleProgress(97, 'Adding to player…');
+            }
+        });
+
+        try {
+            const res = await api.subtitles.generate({ targetLang: code, label });
+
+            if (!res.success) {
+                this.setSubtitleStatus(res.error || 'Could not generate the subtitle.', 'error');
+                this.setSubtitleProgress(null);
+                return;
+            }
+
+            this.customSubtitles.push({ id: res.id, label: res.label, content: res.content });
+            this.activeSubtitleId = res.id;
+            this.renderSubtitleList();
+            this.setSubtitleProgress(100, 'Done');
+            setTimeout(() => this.setSubtitleProgress(null), 1200);
+
+            const partial = res.failedCues > 0 ? ` ${res.failedCues} lines kept in English.` : '';
+            this.setSubtitleStatus(`Generated "${res.label}" from ${res.sourceLabel} (${res.cueCount} lines).${partial}`, 'success');
+        } catch (error) {
+            console.error('Subtitle generation failed:', error);
+            this.setSubtitleStatus(error.message || 'Subtitle generation failed.', 'error');
+            this.setSubtitleProgress(null);
+        } finally {
+            api.subtitles.removeGenerateProgress();
+            if (btn) btn.disabled = false;
+        }
+    },
+
+    renderSubtitleList() {
+        const list = document.getElementById('subtitle-track-list');
+        if (!list) return;
+
+        if (this.customSubtitles.length === 0) {
+            list.innerHTML = '';
+            return;
+        }
+
+        list.innerHTML = `
+            <button type="button" class="subtitle-chip ${!this.activeSubtitleId ? 'active' : ''}" data-sub-id="">
+                Off
+            </button>
+            ${this.customSubtitles.map(sub => `
+                <span class="subtitle-chip-wrap">
+                    <button type="button" class="subtitle-chip ${this.activeSubtitleId === sub.id ? 'active' : ''}" data-sub-id="${sub.id}">
+                        ${sub.label}
+                    </button>
+                    <button type="button" class="subtitle-chip-remove" data-remove-id="${sub.id}" title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </span>
+            `).join('')}
+        `;
+
+        list.querySelectorAll('[data-sub-id]').forEach(btn => {
+            btn.addEventListener('click', () => this.activateSubtitle(btn.dataset.subId || null));
+        });
+        list.querySelectorAll('[data-remove-id]').forEach(btn => {
+            btn.addEventListener('click', () => this.removeSubtitle(btn.dataset.removeId));
+        });
+    },
+
+    setSubtitleStatus(message, type = '') {
+        const el = document.getElementById('subtitle-status');
+        if (!el) return;
+        el.textContent = message || '';
+        el.className = `subtitle-status ${type}`;
+    },
+
+    /** Accepts SRT or VTT text and always returns valid WebVTT. */
+    toWebVTT(text) {
+        let out = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+        if (/^WEBVTT/.test(out.trim())) return out;
+        out = out.replace(/(\d{2}:\d{2}:\d{2}),(\d{1,3})/g, '$1.$2');
+        return `WEBVTT\n\n${out.trim()}\n`;
+    },
+
+    handleSubtitleFileChange(event) {
+        const file = event.target.files && event.target.files[0];
+        const label = document.getElementById('subtitle-file-label');
+        const nameInput = document.getElementById('subtitle-name-input');
+        const addBtn = document.getElementById('subtitle-add-btn');
+
+        if (!file) {
+            this.pendingSubtitleFile = null;
+            if (label) label.textContent = 'Choose file';
+            if (addBtn) addBtn.disabled = true;
+            return;
+        }
+
+        this.pendingSubtitleFile = file;
+        if (label) label.textContent = file.name.length > 26 ? `${file.name.slice(0, 24)}…` : file.name;
+        if (addBtn) addBtn.disabled = false;
+        if (nameInput && !nameInput.value.trim()) {
+            nameInput.value = file.name.replace(/\.[^.]+$/, '').slice(0, 40);
+        }
+        this.setSubtitleStatus('');
+    },
+
+    async addCustomSubtitle() {
+        const file = this.pendingSubtitleFile;
+        if (!file) {
+            this.setSubtitleStatus('Pick a subtitle file first.', 'error');
+            return;
+        }
+        if (!this.isPlaying) {
+            this.setSubtitleStatus('Press play on the video first, then add the subtitle.', 'error');
+            return;
+        }
+
+        const nameInput = document.getElementById('subtitle-name-input');
+        const addBtn = document.getElementById('subtitle-add-btn');
+        const label = (nameInput?.value || '').trim() || file.name.replace(/\.[^.]+$/, '');
+
+        if (addBtn) addBtn.disabled = true;
+        this.setSubtitleStatus('Injecting subtitle into the player…', 'loading');
+
+        try {
+            const raw = await file.text();
+            const content = this.toWebVTT(raw);
+            const id = `cs-${Date.now()}`;
+
+            const res = await api.subtitles.inject({ id, label, lang: 'und', content, activate: true });
+            if (!res.success) {
+                this.setSubtitleStatus(res.error || 'Failed to add subtitle.', 'error');
+                if (addBtn) addBtn.disabled = false;
+                return;
+            }
+
+            this.customSubtitles.push({ id, label, content });
+            this.activeSubtitleId = id;
+            this.renderSubtitleList();
+            this.setSubtitleStatus(`"${label}" is now showing.`, 'success');
+
+            this.pendingSubtitleFile = null;
+            const fileInput = document.getElementById('subtitle-file-input');
+            if (fileInput) fileInput.value = '';
+            if (nameInput) nameInput.value = '';
+            const fileLabel = document.getElementById('subtitle-file-label');
+            if (fileLabel) fileLabel.textContent = 'Choose file';
+        } catch (error) {
+            console.error('Failed to add subtitle:', error);
+            this.setSubtitleStatus(error.message || 'Failed to read the subtitle file.', 'error');
+            if (addBtn) addBtn.disabled = false;
+        }
+    },
+
+    async activateSubtitle(id) {
+        const res = await api.subtitles.activate(id);
+        if (!res.success) {
+            this.setSubtitleStatus(res.error || 'Could not switch subtitle.', 'error');
+            return;
+        }
+        this.activeSubtitleId = id || null;
+        this.renderSubtitleList();
+        this.setSubtitleStatus(id ? 'Subtitle enabled.' : 'Subtitles off.', 'success');
+    },
+
+    async removeSubtitle(id) {
+        await api.subtitles.remove(id);
+        this.customSubtitles = this.customSubtitles.filter(sub => sub.id !== id);
+        if (this.activeSubtitleId === id) this.activeSubtitleId = null;
+        this.renderSubtitleList();
+        this.setSubtitleStatus('Subtitle removed.', '');
+    },
+
+    /** Re-inject after the iframe reloads (server switch, episode change). */
+    async reinjectSubtitles() {
+        if (this.customSubtitles.length === 0) return;
+        this.setSubtitleStatus('Re-applying your subtitles…', 'loading');
+
+        for (const sub of this.customSubtitles) {
+            const res = await api.subtitles.inject({
+                id: sub.id,
+                label: sub.label,
+                lang: 'und',
+                content: sub.content,
+                activate: this.activeSubtitleId === sub.id,
+            });
+            if (!res.success) {
+                this.setSubtitleStatus(res.error || 'Could not re-apply subtitles on this server.', 'error');
+                return;
+            }
+        }
+        this.setSubtitleStatus('Subtitles re-applied.', 'success');
     },
 
     renderSeasonSelector() {
@@ -507,17 +800,19 @@ const WatchPage = {
             preview.addEventListener('click', () => this.handlePlay());
         }
 
-        // Fullscreen button
-        const fullscreenBtn = document.getElementById('btn-fullscreen');
-        if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-        }
+        // Custom subtitle controls
+        const subFileInput = document.getElementById('subtitle-file-input');
+        const subPickBtn = document.getElementById('subtitle-pick-btn');
+        const subAddBtn = document.getElementById('subtitle-add-btn');
 
-        // Lights toggle
-        const lightsBtn = document.getElementById('btn-lights');
-        if (lightsBtn) {
-            lightsBtn.addEventListener('click', () => this.toggleLights());
+        if (subPickBtn && subFileInput) {
+            subPickBtn.addEventListener('click', () => subFileInput.click());
+            subFileInput.addEventListener('change', (e) => this.handleSubtitleFileChange(e));
         }
+        if (subAddBtn) subAddBtn.addEventListener('click', () => this.addCustomSubtitle());
+
+        const subGenerateBtn = document.getElementById('subtitle-generate-btn');
+        if (subGenerateBtn) subGenerateBtn.addEventListener('click', () => this.generateSubtitle());
 
         // Season selector (for TV)
         const seasonSelect = document.getElementById('season-select');
@@ -537,16 +832,16 @@ const WatchPage = {
             });
         });
 
-        // Like / Dislike / Share / Save functionality
+        // Like / Dislike / Favorites / Share
         const likeBtn = document.getElementById('btn-like');
         const dislikeBtn = document.getElementById('btn-dislike');
+        const favoriteBtn = document.getElementById('btn-favorite');
         const shareBtn = document.getElementById('btn-share');
-        const saveBtn = document.getElementById('btn-save-playlist');
 
         if (likeBtn) likeBtn.addEventListener('click', () => this.handleActionClick('like'));
         if (dislikeBtn) dislikeBtn.addEventListener('click', () => this.handleActionClick('dislike'));
+        if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToPlaylistClick());
         if (shareBtn) shareBtn.addEventListener('click', () => this.handleShareClick());
-        if (saveBtn) saveBtn.addEventListener('click', () => this.handleSaveToPlaylistClick());
     },
 
     async checkInteractionStatus() {
@@ -698,29 +993,6 @@ const WatchPage = {
         }
     },
 
-    toggleFullscreen() {
-        const iframe = document.getElementById('video-player-iframe');
-        if (!iframe) return;
-
-        if (!document.fullscreenElement) {
-            if (iframe.requestFullscreen) {
-                iframe.requestFullscreen();
-            } else if (iframe.webkitRequestFullscreen) {
-                iframe.webkitRequestFullscreen();
-            } else if (iframe.msRequestFullscreen) {
-                iframe.msRequestFullscreen();
-            }
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
-            }
-        }
-    },
-
     handlePlay() {
         const preview = document.getElementById('video-preview');
         const playerContainer = document.querySelector('.video-player-container');
@@ -745,6 +1017,7 @@ const WatchPage = {
 
             iframe.src = playerUrl;
             this.isPlaying = true;
+            this.reinjectSubtitles();
 
             // Record "watched" activity if logged in
             if (localStorage.getItem('authToken')) {
@@ -781,6 +1054,7 @@ const WatchPage = {
                 const playerUrl = this.buildPlayerUrl(serverId);
                 console.log(`[Player] Switching server to ${serverId}:`, playerUrl);
                 iframe.src = playerUrl;
+                this.reinjectSubtitles();
             }
         } else {
             this.handlePlay();

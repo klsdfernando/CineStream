@@ -92,6 +92,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
         search: (params) => ipcRenderer.invoke('torrent:search', params),
     },
 
+    // ─── Custom Subtitles ───
+    subtitles: {
+        inject: (payload) => ipcRenderer.invoke('subtitle:inject', payload),
+        activate: (id) => ipcRenderer.invoke('subtitle:activate', id),
+        remove: (id) => ipcRenderer.invoke('subtitle:remove', id),
+        playerReady: () => ipcRenderer.invoke('subtitle:playerReady'),
+        listTracks: () => ipcRenderer.invoke('subtitle:listTracks'),
+        generate: (options) => ipcRenderer.invoke('subtitle:generate', options),
+        onGenerateProgress: (callback) => ipcRenderer.on('subtitle:generateProgress', (event, data) => callback(data)),
+        removeGenerateProgress: () => ipcRenderer.removeAllListeners('subtitle:generateProgress'),
+    },
+
     // ─── Version Check ───
     version: {
         check: (version) => ipcRenderer.invoke('version:check', version),

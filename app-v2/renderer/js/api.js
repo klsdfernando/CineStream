@@ -99,6 +99,18 @@ const api = {
         search: (params) => window.electronAPI.torrentSearch.search(params),
     },
 
+    // ─── Custom Subtitles (injected into the player iframe) ───
+    subtitles: {
+        inject: (payload) => window.electronAPI.subtitles.inject(payload),
+        activate: (id) => window.electronAPI.subtitles.activate(id),
+        remove: (id) => window.electronAPI.subtitles.remove(id),
+        playerReady: () => window.electronAPI.subtitles.playerReady(),
+        listTracks: () => window.electronAPI.subtitles.listTracks(),
+        generate: (options) => window.electronAPI.subtitles.generate(options),
+        onGenerateProgress: (cb) => window.electronAPI.subtitles.onGenerateProgress(cb),
+        removeGenerateProgress: () => window.electronAPI.subtitles.removeGenerateProgress(),
+    },
+
     // Legacy helper methods for backward compatibility
     /**
      * Make a GET request - now delegates to the appropriate IPC call

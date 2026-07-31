@@ -10,6 +10,7 @@ const { registerActivityHandlers } = require('./main/ipc/activityHandlers');
 const { registerPlaylistHandlers } = require('./main/ipc/playlistHandlers');
 const { registerReportHandlers } = require('./main/ipc/reportHandlers');
 const { registerTorrentHandlers } = require('./main/ipc/torrentHandlers');
+const { registerSubtitleHandlers } = require('./main/ipc/subtitleHandlers');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -185,6 +186,7 @@ app.whenReady().then(() => {
     registerPlaylistHandlers();
     registerReportHandlers();
     registerTorrentHandlers();
+    registerSubtitleHandlers();
 
     createWindow();
 
