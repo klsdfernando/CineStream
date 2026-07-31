@@ -190,6 +190,30 @@
 }
 
 /* ============================================
+   Media Tools — split subtitles / equalizer
+   ============================================ */
+.av-tools {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 20px;
+}
+
+.av-tools .subtitle-bar,
+.av-tools .eq-bar {
+    margin-bottom: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 1100px) {
+    .av-tools {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
    Custom Subtitle Controller
    ============================================ */
 .subtitle-bar {
@@ -199,6 +223,192 @@
     padding: 16px 20px;
     margin-bottom: 20px;
 }
+
+/* ============================================
+   Audio Booster & Equalizer
+   ============================================ */
+.eq-bar {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eq-switch {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.eq-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.eq-switch-track {
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    border-radius: 9999px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    position: relative;
+    transition: background-color var(--transition-fast);
+}
+
+.eq-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #d4d4d8;
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+
+.eq-switch input:checked + .eq-switch-track {
+    background-color: var(--accent-green);
+    border-color: var(--accent-green);
+}
+
+.eq-switch input:checked + .eq-switch-track .eq-switch-thumb {
+    transform: translateX(18px);
+    background-color: #04120a;
+}
+
+.eq-boost-row,
+.eq-preset-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.eq-row-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    min-width: 92px;
+}
+
+.eq-boost-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--accent-green), #86efac);
+    outline: none;
+}
+
+.eq-boost-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--accent-green);
+    cursor: pointer;
+}
+
+.eq-boost-value {
+    min-width: 48px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-green);
+}
+
+.eq-preset-select {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+}
+
+.eq-preset-select:focus {
+    border-color: var(--accent-green);
+}
+
+.eq-reset-btn {
+    padding: 8px 16px;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.eq-reset-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.eq-bands {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 12px 10px 8px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    flex: 0 0 auto;
+    height: 124px;
+}
+
+.eq-band {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    flex: 1;
+}
+
+.eq-band-slider {
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 14px;
+    height: 84px;
+    cursor: pointer;
+    accent-color: var(--accent-green);
+}
+
+.eq-band-freq {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.eq-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    min-height: 14px;
+}
+
+.eq-note.warn { color: #fbbf24; }
+.eq-note.error { color: #f87171; }
+.eq-note.success { color: var(--accent-green); }
 
 .subtitle-bar-header {
     display: flex;
@@ -227,6 +437,62 @@
     margin-top: 18px;
     padding-top: 18px;
     border-top: 1px solid var(--border-color);
+}
+
+.subtitle-subgroup + .subtitle-subgroup {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.subtitle-vault-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 36px;
+}
+
+.subtitle-vault-empty {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 6px 0;
+}
+
+.subtitle-vault-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.subtitle-vault-btn:hover {
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.subtitle-vault-btn.active {
+    background-color: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #000;
+}
+
+.subtitle-vault-btn.loading {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.subtitle-vault-size {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.7;
 }
 
 .subtitle-group-label {
@@ -517,18 +783,53 @@
 }
 
 /* Watch Content Layout */
+.watch-page .download-section {
+    margin: 0 0 20px 0;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    box-sizing: border-box;
+}
+
+.watch-page .download-options {
+    flex: 1 1 auto;
+    min-height: 140px;
+}
+
+.watch-page .download-empty {
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
 .watch-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 32px;
+    gap: 20px;
     padding-top: 0;
+    align-items: stretch;
 }
 
 /* Left Column - Movie Info */
 .watch-info {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .watch-movie-header {
@@ -623,6 +924,7 @@
     gap: 12px;
     padding-top: 16px;
     border-top: 1px solid var(--border-color);
+    margin-top: auto;
 }
 
 .watch-action-btn {
@@ -723,6 +1025,20 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.watch-similar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
+    flex: 1 1 auto;
+    align-content: start;
 }
 
 .watch-similar-title {
@@ -740,12 +1056,6 @@
     height: 20px;
     background-color: var(--accent-green);
     border-radius: 2px;
-}
-
-.watch-similar-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 16px;
 }
 
 .watch-similar-card {

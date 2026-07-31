@@ -106,9 +106,17 @@ const api = {
         remove: (id) => window.electronAPI.subtitles.remove(id),
         playerReady: () => window.electronAPI.subtitles.playerReady(),
         listTracks: () => window.electronAPI.subtitles.listTracks(),
+        vidvaultList: (options) => window.electronAPI.subtitles.vidvaultList(options),
+        vidvaultLoad: (options) => window.electronAPI.subtitles.vidvaultLoad(options),
         generate: (options) => window.electronAPI.subtitles.generate(options),
         onGenerateProgress: (cb) => window.electronAPI.subtitles.onGenerateProgress(cb),
         removeGenerateProgress: () => window.electronAPI.subtitles.removeGenerateProgress(),
+    },
+
+    // ─── Audio Booster / Equalizer ───
+    audio: {
+        apply: (cfg) => window.electronAPI.audio.apply(cfg),
+        reset: () => window.electronAPI.audio.reset(),
     },
 
     // Legacy helper methods for backward compatibility

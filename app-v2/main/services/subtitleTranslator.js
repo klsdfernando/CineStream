@@ -1,31 +1,52 @@
 /**
  * Subtitle Translator (experimental)
  *
- * Downloads a WebVTT track, translates only the cue text while leaving every
- * timestamp untouched, and rebuilds a valid WebVTT file.
+ * Downloads / receives WebVTT (or SRT converted to VTT), translates cue text only,
+ * keeps timestamps intact.
  *
- * Uses the free unofficial Google endpoint, which rate-limits aggressively, so
- * cues are grouped into batches and sent sequentially with a small delay.
+ * Primary engine: Google's public gtx endpoint (same one used by translate.google.com).
+ * Fallback: @vitalets/google-translate-api.
+ *
+ * Important behaviours:
+ *  - Fail fast after a few consecutive hard failures (no 5-minute death spiral).
+ *  - Stable cue markers so batch replies can be re-aligned.
+ *  - On mis-aligned batches, split in half instead of translating every cue 1-by-1.
  */
 
-const { translate } = require('@vitalets/google-translate-api/dist/cjs/index.js');
+const { translate: vitaletsTranslate } = require('@vitalets/google-translate-api/dist/cjs/index.js');
 
-const MAX_BATCH_CUES = 40;
-const MAX_BATCH_CHARS = 1500;
-const BATCH_DELAY_MS = 220;
-const MAX_RETRIES = 3;
+const MAX_BATCH_CUES = 18;
+const MAX_BATCH_CHARS = 900;
+const BATCH_DELAY_MS = 120;
+const MAX_RETRIES = 2;
+const MAX_CONSECUTIVE_FAILURES = 2;
+
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const MARK = (i) => `⟦${i}⟧`;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-/** Parse WebVTT (or SRT-ish) text into cues, preserving timing lines verbatim. */
+/** Parse WebVTT or SRT into cues. SRT-aware so single-newline files still split. */
 function parseVTT(raw) {
-    const text = String(raw).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const text = String(raw).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim();
+    if (!text) return [];
+
+    // Prefer SRT-style blocks (number + timing) when the file looks like SRT/VTT cues.
+    const cueBlocks = text.split(/\n(?=\d+\n\d{1,2}:\d{2}:\d{2}[,.]\d{1,3}\s*-->)/);
+    const looksLikeNumbered = cueBlocks.length > 1 && /^\d+\n/.test(cueBlocks[0].replace(/^WEBVTT[^\n]*\n+/, ''));
+
+    const chunks = looksLikeNumbered
+        ? cueBlocks
+        : text.split(/\n{2,}/);
+
     const cues = [];
 
-    for (const block of text.split(/\n{2,}/)) {
+    for (let block of chunks) {
+        block = block.replace(/^WEBVTT[^\n]*\n*/, '').trim();
+        if (!block) continue;
+
         const lines = block.split('\n').filter(line => line.trim() !== '');
         if (lines.length === 0) continue;
-        if (/^WEBVTT/i.test(lines[0])) continue;
         if (/^(NOTE|STYLE|REGION)\b/i.test(lines[0])) continue;
 
         const timingIndex = lines.findIndex(line => line.includes('-->'));
@@ -34,13 +55,20 @@ function parseVTT(raw) {
         const body = lines.slice(timingIndex + 1);
         if (body.length === 0) continue;
 
-        const original = body.join(' ').trim();
+        const original = body.join('\n').trim();
+        const clean = original
+            .replace(/<[^>]*>/g, '')
+            .replace(/\{[^}]*\}/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+        if (!clean) continue;
+
         cues.push({
-            id: timingIndex > 0 ? lines[timingIndex - 1] : null,
-            timing: lines[timingIndex].replace(/(\d{2}:\d{2}:\d{2}),(\d{1,3})/g, '$1.$2'),
+            id: timingIndex > 0 && /^\d+$/.test(lines[timingIndex - 1]) ? lines[timingIndex - 1] : null,
+            timing: lines[timingIndex].replace(/(\d{1,2}:\d{2}:\d{2}),(\d{1,3})/g, '$1.$2'),
             original,
-            // Tags and speaker markers confuse the translator, so strip them first.
-            clean: original.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+            clean,
             translated: null,
         });
     }
@@ -65,7 +93,7 @@ function buildBatches(cues) {
     let chars = 0;
 
     for (const cue of cues) {
-        const size = cue.clean.length + 1;
+        const size = cue.clean.length + 8;
         const full = current.length >= MAX_BATCH_CUES || (chars + size) > MAX_BATCH_CHARS;
         if (current.length > 0 && full) {
             batches.push(current);
@@ -76,53 +104,146 @@ function buildBatches(cues) {
         chars += size;
     }
     if (current.length > 0) batches.push(current);
-
     return batches;
+}
+
+function packBatch(batch) {
+    return batch.map((cue, i) => `${MARK(i)} ${cue.clean}`).join('\n');
+}
+
+function unpackBatch(translated, batchSize) {
+    const map = new Map();
+    const re = /⟦(\d+)⟧\s*([\s\S]*?)(?=⟦\d+⟧|$)/g;
+    let match;
+    while ((match = re.exec(String(translated))) !== null) {
+        const idx = Number(match[1]);
+        const text = match[2].replace(/\s+/g, ' ').trim();
+        if (Number.isInteger(idx) && text) map.set(idx, text);
+    }
+
+    if (map.size === batchSize) {
+        return Array.from({ length: batchSize }, (_, i) => map.get(i) || null);
+    }
+
+    // Soft fallback: plain lines when markers were stripped.
+    const lines = String(translated).split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === batchSize) {
+        return lines.map(line => line.replace(/^⟦\d+⟧\s*/, ''));
+    }
+
+    return null;
+}
+
+async function translateViaGtx(text, targetLang) {
+    const params = new URLSearchParams({
+        client: 'gtx',
+        sl: 'en',
+        tl: targetLang,
+        dt: 't',
+        q: text,
+    });
+
+    // Prefer POST so larger batches are not truncated by URL length.
+    let res = await fetch('https://translate.googleapis.com/translate_a/single', {
+        method: 'POST',
+        headers: {
+            'User-Agent': UA,
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            Accept: 'application/json',
+        },
+        body: params.toString(),
+    });
+
+    // Some networks reject POST on this host — fall back to GET for short payloads.
+    if (!res.ok && text.length < 1200) {
+        res = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
+            headers: { 'User-Agent': UA, Accept: 'application/json' },
+        });
+    }
+
+    if (res.status === 429) {
+        const err = new Error('Google Translate rate limited (HTTP 429)');
+        err.code = 429;
+        throw err;
+    }
+    if (!res.ok) throw new Error(`Google Translate HTTP ${res.status}`);
+
+    const data = await res.json();
+    if (!Array.isArray(data) || !Array.isArray(data[0])) {
+        throw new Error('Unexpected Google Translate response');
+    }
+    return data[0].map(chunk => (chunk && chunk[0]) || '').join('');
+}
+
+async function translateViaVitalets(text, targetLang) {
+    const result = await vitaletsTranslate(text, { to: targetLang });
+    return result.text;
 }
 
 async function translateText(text, targetLang) {
     let lastError;
+
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-            const result = await translate(text, { to: targetLang });
-            return result.text;
+            return await translateViaGtx(text, targetLang);
         } catch (error) {
             lastError = error;
-            await sleep(600 * (attempt + 1));
+            // On hard rate-limit, don't keep hammering the same endpoint.
+            if (error && error.code === 429) break;
+            await sleep(350 * (attempt + 1));
         }
     }
-    throw lastError;
+
+    // One fallback attempt through the library the project already depends on.
+    try {
+        return await translateViaVitalets(text, targetLang);
+    } catch (error) {
+        lastError = error;
+    }
+
+    const err = new Error(
+        (lastError && lastError.message) || 'Translation request failed'
+    );
+    err.cause = lastError;
+    throw err;
 }
 
-/**
- * Translate one batch. Cues are joined with newlines so one output line maps to
- * one cue; if the translator changes the line count the alignment is broken, so
- * that batch falls back to translating each cue on its own.
- */
 async function translateBatch(batch, targetLang) {
-    const joined = batch.map(cue => cue.clean).join('\n');
-    const translated = await translateText(joined, targetLang);
-    const lines = translated.split('\n').map(line => line.trim()).filter(line => line !== '');
-
-    if (lines.length === batch.length) {
-        batch.forEach((cue, i) => { cue.translated = lines[i]; });
+    if (batch.length === 1) {
+        batch[0].translated = await translateText(batch[0].clean, targetLang);
         return;
     }
 
-    for (const cue of batch) {
-        try {
-            cue.translated = await translateText(cue.clean, targetLang);
-        } catch (error) {
-            cue.translated = cue.clean;
-        }
-        await sleep(80);
+    const packed = packBatch(batch);
+    const translated = await translateText(packed, targetLang);
+    const lines = unpackBatch(translated, batch.length);
+
+    if (lines) {
+        batch.forEach((cue, i) => {
+            cue.translated = lines[i] || cue.clean;
+        });
+        return;
     }
+
+    // Alignment failed — split the batch instead of 1-by-1 hammering.
+    if (batch.length <= 2) {
+        for (const cue of batch) {
+            cue.translated = await translateText(cue.clean, targetLang);
+            await sleep(60);
+        }
+        return;
+    }
+
+    const mid = Math.ceil(batch.length / 2);
+    await translateBatch(batch.slice(0, mid), targetLang);
+    await sleep(BATCH_DELAY_MS);
+    await translateBatch(batch.slice(mid), targetLang);
 }
 
 /**
- * @param {string} vttText   Source WebVTT content
- * @param {string} targetLang Google language code (e.g. 'si')
- * @param {(progress: {done: number, total: number}) => void} onProgress
+ * @param {string} vttText
+ * @param {string} targetLang
+ * @param {(progress: {done: number, total: number, phase?: string}) => void} onProgress
  */
 async function translateVTT(vttText, targetLang, onProgress) {
     const allCues = parseVTT(vttText);
@@ -132,17 +253,44 @@ async function translateVTT(vttText, targetLang, onProgress) {
         throw new Error('No subtitle cues found in the source file.');
     }
 
+    // Probe first so a broken translate path fails in seconds, not after the whole file.
+    try {
+        const probe = await translateText('Hello', targetLang);
+        if (!probe || !String(probe).trim()) {
+            throw new Error('Empty probe response');
+        }
+    } catch (error) {
+        const detail = (error && error.message) || 'unreachable';
+        throw new Error(
+            `Translation service is not reachable (${detail}). ` +
+            'Check your internet connection and try again.'
+        );
+    }
+
     const batches = buildBatches(cues);
     let done = 0;
     let failed = 0;
+    let consecutiveFailures = 0;
+    let lastError = null;
 
     for (const batch of batches) {
         try {
             await translateBatch(batch, targetLang);
+            consecutiveFailures = 0;
         } catch (error) {
-            // Keep the English text for this batch rather than losing the cues.
+            lastError = error;
             batch.forEach(cue => { cue.translated = cue.clean; });
             failed += batch.length;
+            consecutiveFailures += 1;
+
+            // Fail fast — don't burn minutes retrying a broken/blocked service.
+            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                const detail = (error && error.message) || 'unknown error';
+                throw new Error(
+                    `Translation failed early (${detail}). ` +
+                    'Check your network connection to Google Translate and try again.'
+                );
+            }
         }
 
         done += batch.length;
@@ -151,7 +299,8 @@ async function translateVTT(vttText, targetLang, onProgress) {
     }
 
     if (failed === cues.length) {
-        throw new Error('Translation service refused every request (likely rate limited). Try again in a few minutes.');
+        const detail = (lastError && lastError.message) || 'all requests failed';
+        throw new Error(`Could not translate any lines (${detail}).`);
     }
 
     return { content: buildVTT(allCues), cueCount: cues.length, failedCues: failed };

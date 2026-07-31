@@ -8,6 +8,7 @@
 
 const { ipcMain } = require('electron');
 const { translateVTT } = require('../services/subtitleTranslator');
+const { listSubtitles, downloadSubtitle, pickEnglishTrack } = require('../services/vidvault');
 
 const HAS_VIDEO = `(() => { try { return !!document.querySelector('video'); } catch (e) { return false; } })()`;
 
@@ -168,31 +169,107 @@ async function runInPlayer(sender, script, wait = false) {
     }
 }
 
-/** Prefer a plain English track over SDH/forced variants. */
-function pickSourceTrack(tracks) {
-    const usable = tracks.filter(t => !t.custom && t.src);
-    if (usable.length === 0) return null;
-
-    const english = usable.filter(t => /english|^en/i.test(t.label) || /^en/i.test(t.lang));
-    const pool = english.length > 0 ? english : usable;
-
-    const plain = pool.find(t => !/sdh|forced|cc\b/i.test(t.label));
-    return plain || pool[0];
+/** Convert SRT (or already-VTT) text into WebVTT. */
+function toWebVTT(text) {
+    let out = String(text).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    if (/^WEBVTT/i.test(out.trim())) return out;
+    out = out.replace(/(\d{2}:\d{2}:\d{2}),(\d{1,3})/g, '$1.$2');
+    return `WEBVTT\n\n${out.trim()}\n`;
 }
 
-async function downloadTrack(url, referer) {
-    const response = await fetch(url, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-            'Accept': 'text/vtt,text/plain,*/*',
-            ...(referer ? { Referer: referer, Origin: new URL(referer).origin } : {}),
-        },
-    });
+/**
+ * Web Audio graph injected into the player frame:
+ *   source → [EQ biquad filters] → gain (boost) → limiter → destination
+ * The MediaElementSource can only be created once per <video>, so it is cached
+ * on window.__cineAudio and reused across calls.
+ */
+function audioApplyScript(cfg) {
+    return `(() => {
+        try {
+            const CFG = ${JSON.stringify(cfg)};
+            const video = document.querySelector('video');
+            if (!video) return { ok: false, error: 'Player audio not ready. Start playback first.' };
 
-    if (!response.ok) {
-        throw new Error(`Could not download the source subtitle (HTTP ${response.status}).`);
-    }
-    return response.text();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return { ok: false, error: 'Web Audio not supported here.' };
+
+            if (!window.__cineAudio) window.__cineAudio = { ctx: null, source: null, video: null, nodes: [] };
+            const A = window.__cineAudio;
+            if (!A.ctx) A.ctx = new AC();
+            if (A.ctx.state === 'suspended') { try { A.ctx.resume(); } catch (e) {} }
+
+            if (A.video !== video || !A.source) {
+                try {
+                    A.source = A.ctx.createMediaElementSource(video);
+                    A.video = video;
+                } catch (e) {
+                    if (!(A.source && A.video === video)) {
+                        return { ok: false, error: 'Could not tap the player audio (' + ((e && e.message) || e) + ').' };
+                    }
+                }
+            }
+
+            try { A.source.disconnect(); } catch (e) {}
+            (A.nodes || []).forEach(n => { try { n.disconnect(); } catch (e) {} });
+            A.nodes = [];
+
+            if (!CFG.enabled) {
+                A.source.connect(A.ctx.destination);
+                return { ok: true, enabled: false, state: A.ctx.state };
+            }
+
+            let node = A.source;
+            const bands = CFG.bands || [];
+            bands.forEach((b, i) => {
+                const f = A.ctx.createBiquadFilter();
+                f.type = i === 0 ? 'lowshelf' : (i === bands.length - 1 ? 'highshelf' : 'peaking');
+                f.frequency.value = b.freq;
+                f.Q.value = b.q || 1.1;
+                f.gain.value = Math.max(-24, Math.min(24, b.gain || 0));
+                node.connect(f);
+                node = f;
+                A.nodes.push(f);
+            });
+
+            const gain = A.ctx.createGain();
+            gain.gain.value = Math.max(0, Math.min(6, CFG.gain || 1));
+            node.connect(gain);
+            node = gain;
+            A.nodes.push(gain);
+
+            // Limiter so heavy boost clips gracefully instead of tearing.
+            const comp = A.ctx.createDynamicsCompressor();
+            comp.threshold.value = -6;
+            comp.knee.value = 6;
+            comp.ratio.value = 20;
+            comp.attack.value = 0.003;
+            comp.release.value = 0.25;
+            node.connect(comp);
+            node = comp;
+            A.nodes.push(comp);
+
+            node.connect(A.ctx.destination);
+            return { ok: true, enabled: true, gain: gain.gain.value, state: A.ctx.state };
+        } catch (e) {
+            return { ok: false, error: String((e && e.message) || e) };
+        }
+    })()`;
+}
+
+function audioResetScript() {
+    return `(() => {
+        try {
+            const A = window.__cineAudio;
+            if (!A || !A.ctx || !A.source) return { ok: true };
+            try { A.source.disconnect(); } catch (e) {}
+            (A.nodes || []).forEach(n => { try { n.disconnect(); } catch (e) {} });
+            A.nodes = [];
+            A.source.connect(A.ctx.destination);
+            return { ok: true };
+        } catch (e) {
+            return { ok: false, error: String((e && e.message) || e) };
+        }
+    })()`;
 }
 
 function registerSubtitleHandlers() {
@@ -233,9 +310,68 @@ function registerSubtitleHandlers() {
         }
     });
 
-    // Experimental: download the player's English track and machine-translate it.
+    // List subtitle tracks from VidVault for the current title.
+    ipcMain.handle('subtitle:vidvaultList', async (_event, options) => {
+        try {
+            const tracks = await listSubtitles(options || {});
+            return { success: true, tracks };
+        } catch (error) {
+            console.error('[Subtitles] VidVault list failed:', error);
+            return { success: false, error: error.message || 'Failed to load subtitles from VidVault.' };
+        }
+    });
+
+    // Download a VidVault track and inject it into the player.
+    ipcMain.handle('subtitle:vidvaultLoad', async (event, options) => {
+        const { downloadUrl, url, label, lang, id, activate } = options || {};
+        if (!downloadUrl && !url) {
+            return { success: false, error: 'Missing subtitle download URL.' };
+        }
+
+        try {
+            const raw = await downloadSubtitle(downloadUrl || url, url);
+            const content = toWebVTT(raw);
+            const trackId = String(id || `vv-${Date.now()}`);
+
+            const injected = await runInPlayer(event.sender, injectScript({
+                id: trackId,
+                label: String(label || 'Subtitle'),
+                lang: String(lang || 'und'),
+                content,
+                activate: activate !== false,
+            }), true);
+
+            if (!injected.success) return injected;
+
+            return {
+                success: true,
+                id: trackId,
+                label: String(label || 'Subtitle'),
+                lang: String(lang || 'und'),
+                content,
+            };
+        } catch (error) {
+            console.error('[Subtitles] VidVault load failed:', error);
+            return { success: false, error: error.message || 'Failed to load subtitle.' };
+        }
+    });
+
+    // Experimental: download English from VidVault, machine-translate, inject.
     ipcMain.handle('subtitle:generate', async (event, options) => {
-        const { targetLang, label } = options || {};
+        const {
+            targetLang,
+            label,
+            type,
+            tmdbId,
+            season,
+            episode,
+            title,
+            year,
+            sourceDownloadUrl,
+            sourceUrl,
+            sourceLabel,
+        } = options || {};
+
         if (!targetLang) return { success: false, error: 'No target language selected.' };
 
         const sender = event.sender;
@@ -245,19 +381,29 @@ function registerSubtitleHandlers() {
 
         try {
             report('locating');
-            const frame = await waitForPlayerFrame(sender, 20, 500);
-            if (!frame) {
-                return { success: false, error: 'Player video not found. Start playback first, then try again.' };
+
+            let downloadUrl = sourceDownloadUrl;
+            let fallbackUrl = sourceUrl;
+            let fromLabel = sourceLabel || 'English';
+
+            if (!downloadUrl && !fallbackUrl) {
+                if (!tmdbId) {
+                    return { success: false, error: 'Missing media id for subtitle lookup.' };
+                }
+                report('downloading', { source: 'VidVault' });
+                const tracks = await listSubtitles({ type, tmdbId, season, episode, title, year });
+                const source = pickEnglishTrack(tracks);
+                if (!source) {
+                    return { success: false, error: 'No English subtitle found on VidVault for this title.' };
+                }
+                downloadUrl = source.downloadUrl;
+                fallbackUrl = source.url;
+                fromLabel = source.label;
             }
 
-            const tracks = await frame.executeJavaScript(LIST_TRACKS, true);
-            const source = pickSourceTrack(tracks || []);
-            if (!source) {
-                return { success: false, error: 'This player has no subtitle track to translate from.' };
-            }
-
-            report('downloading', { source: source.label });
-            const vttText = await downloadTrack(source.src, frame.url);
+            report('downloading', { source: fromLabel });
+            const raw = await downloadSubtitle(downloadUrl || fallbackUrl, fallbackUrl);
+            const vttText = toWebVTT(raw);
 
             report('translating', { done: 0, total: 0 });
             const result = await translateVTT(vttText, targetLang, ({ done, total }) => {
@@ -281,7 +427,7 @@ function registerSubtitleHandlers() {
                 id,
                 label: String(label || targetLang),
                 content: result.content,
-                sourceLabel: source.label,
+                sourceLabel: fromLabel,
                 cueCount: result.cueCount,
                 failedCues: result.failedCues,
             };
@@ -289,6 +435,15 @@ function registerSubtitleHandlers() {
             console.error('[Subtitles] Generation failed:', error);
             return { success: false, error: error.message || 'Subtitle generation failed.' };
         }
+    });
+
+    // Audio booster + equalizer (injected Web Audio graph in the player frame).
+    ipcMain.handle('audio:apply', async (event, cfg) => {
+        return runInPlayer(event.sender, audioApplyScript(cfg || {}), true);
+    });
+
+    ipcMain.handle('audio:reset', async (event) => {
+        return runInPlayer(event.sender, audioResetScript());
     });
 
     console.log('[Subtitles] Custom subtitle handlers registered');

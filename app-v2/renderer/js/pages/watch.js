@@ -16,6 +16,15 @@ const WatchPage = {
     customSubtitles: [],
     activeSubtitleId: null,
     pendingSubtitleFile: null,
+    vidvaultTracks: [],
+    vidvaultLoading: false,
+    loadingVaultId: null,
+    // Audio booster / equalizer state
+    audioEnabled: false,
+    audioBoost: 1,
+    audioBands: [],
+    audioPreset: 'flat',
+    _audioApplyTimer: null,
 
     servers: [
         {
@@ -62,6 +71,13 @@ const WatchPage = {
         this.customSubtitles = [];
         this.activeSubtitleId = null;
         this.pendingSubtitleFile = null;
+        this.vidvaultTracks = [];
+        this.vidvaultLoading = false;
+        this.loadingVaultId = null;
+        this.audioEnabled = false;
+        this.audioBoost = 1;
+        this.audioBands = this.eqFrequencies.map(freq => ({ freq, gain: 0 }));
+        this.audioPreset = 'flat';
         // Support both old format (just id) and new format ({id, mediaType})
         if (typeof params === 'object') {
             this.mediaId = params.id;
@@ -182,7 +198,10 @@ const WatchPage = {
                     </div>
                 </div>
 
-                ${this.renderSubtitleBar()}
+                <div class="av-tools">
+                    ${this.renderSubtitleBar()}
+                    ${this.renderEqualizer()}
+                </div>
 
                 <!-- Download Section -->
                 <div class="download-section" id="download-section">
@@ -313,6 +332,7 @@ const WatchPage = {
 
         // Search for available torrents
         this.searchTorrents();
+        this.loadVidvaultSubtitles();
     },
 
     // Google language codes offered for machine translation
@@ -342,76 +362,344 @@ const WatchPage = {
     renderSubtitleBar() {
         return `
             <div class="subtitle-bar" id="subtitle-bar">
-                <div class="subtitle-bar-header">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="4" width="20" height="16" rx="2"/>
-                        <line x1="6" y1="14" x2="11" y2="14"/>
-                        <line x1="14" y1="14" x2="18" y2="14"/>
-                        <line x1="6" y1="10" x2="9" y2="10"/>
-                        <line x1="12" y1="10" x2="18" y2="10"/>
-                    </svg>
-                    <span>Custom Subtitles</span>
-                    <span class="subtitle-hint">Start playback first</span>
+                <div class="subtitle-group subtitle-group--load">
+                    <div class="subtitle-bar-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>Load Sub</span>
+                        <span class="subtitle-hint">From VidVault</span>
+                    </div>
+                    <div class="subtitle-vault-list" id="subtitle-vault-list">
+                        <div class="subtitle-vault-empty">Looking up available subtitles…</div>
+                    </div>
                 </div>
 
-                <div class="subtitle-bar-body" id="subtitle-bar-body">
-                    <div class="subtitle-group">
-                        <span class="subtitle-group-label">Upload a file</span>
-                        <div class="subtitle-bar-controls">
-                            <input type="file" id="subtitle-file-input" accept=".vtt,.srt,.txt" hidden>
-                            <button type="button" class="subtitle-btn-file" id="subtitle-pick-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="17 8 12 3 7 8"/>
-                                    <line x1="12" y1="3" x2="12" y2="15"/>
-                                </svg>
-                                <span id="subtitle-file-label">Choose file</span>
-                            </button>
-                            <input type="text" class="subtitle-name-input" id="subtitle-name-input" placeholder="Subtitle name (e.g. Sinhala)" maxlength="40">
-                            <button type="button" class="subtitle-btn-add" id="subtitle-add-btn" disabled>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                Add to Player
-                            </button>
-                        </div>
+                <div class="subtitle-group">
+                    <div class="subtitle-bar-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2"/>
+                            <line x1="6" y1="14" x2="11" y2="14"/>
+                            <line x1="14" y1="14" x2="18" y2="14"/>
+                            <line x1="6" y1="10" x2="9" y2="10"/>
+                            <line x1="12" y1="10" x2="18" y2="10"/>
+                        </svg>
+                        <span>Custom Subtitles</span>
+                        <span class="subtitle-hint">Start playback first</span>
                     </div>
 
-                    <div class="subtitle-group">
-                        <span class="subtitle-group-label">
-                            Generate by translation
-                            <span class="subtitle-badge-exp">Experimental</span>
-                        </span>
-                        <div class="subtitle-bar-controls">
-                            <select class="subtitle-lang-select" id="subtitle-lang-select">
-                                ${this.translateLanguages.map(lang => `
-                                    <option value="${lang.code}">${lang.name}</option>
-                                `).join('')}
-                            </select>
-                            <button type="button" class="subtitle-btn-generate" id="subtitle-generate-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M5 8h9M9 4v4c0 4-2 6-5 7"/>
-                                    <path d="M10 12c1 3 3 5 6 6"/>
-                                    <path d="M14 20l4-9 4 9M15.5 17h5"/>
-                                </svg>
-                                Generate Subtitle
-                            </button>
-                            <span class="subtitle-generate-note">
-                                Translates the player's English track. Takes a minute or two.
+                    <div class="subtitle-bar-body" id="subtitle-bar-body">
+                        <div class="subtitle-subgroup">
+                            <span class="subtitle-group-label">Upload a file</span>
+                            <div class="subtitle-bar-controls">
+                                <input type="file" id="subtitle-file-input" accept=".vtt,.srt,.txt" hidden>
+                                <button type="button" class="subtitle-btn-file" id="subtitle-pick-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <span id="subtitle-file-label">Choose file</span>
+                                </button>
+                                <input type="text" class="subtitle-name-input" id="subtitle-name-input" placeholder="Subtitle name (e.g. Sinhala)" maxlength="40">
+                                <button type="button" class="subtitle-btn-add" id="subtitle-add-btn" disabled>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add to Player
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="subtitle-subgroup">
+                            <span class="subtitle-group-label">
+                                Generate by translation
+                                <span class="subtitle-badge-exp">Experimental</span>
                             </span>
-                        </div>
-                        <div class="subtitle-progress" id="subtitle-progress">
-                            <div class="subtitle-progress-bar"><span id="subtitle-progress-fill"></span></div>
-                            <span class="subtitle-progress-text" id="subtitle-progress-text"></span>
+                            <div class="subtitle-bar-controls">
+                                <select class="subtitle-lang-select" id="subtitle-lang-select">
+                                    ${this.translateLanguages.map(lang => `
+                                        <option value="${lang.code}">${lang.name}</option>
+                                    `).join('')}
+                                </select>
+                                <button type="button" class="subtitle-btn-generate" id="subtitle-generate-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M5 8h9M9 4v4c0 4-2 6-5 7"/>
+                                        <path d="M10 12c1 3 3 5 6 6"/>
+                                        <path d="M14 20l4-9 4 9M15.5 17h5"/>
+                                    </svg>
+                                    Generate Subtitle
+                                </button>
+                                <span class="subtitle-generate-note">
+                                    Translates VidVault's English track. Takes a minute or two.
+                                </span>
+                            </div>
+                            <div class="subtitle-progress" id="subtitle-progress">
+                                <div class="subtitle-progress-bar"><span id="subtitle-progress-fill"></span></div>
+                                <span class="subtitle-progress-text" id="subtitle-progress-text"></span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="subtitle-status" id="subtitle-status"></div>
-                <div class="subtitle-track-list" id="subtitle-track-list"></div>
+                    <div class="subtitle-status" id="subtitle-status"></div>
+                    <div class="subtitle-track-list" id="subtitle-track-list"></div>
+                </div>
             </div>
         `;
+    },
+
+    // Equalizer band centre frequencies (Hz)
+    eqFrequencies: [60, 170, 310, 600, 1000, 3000, 6000, 12000],
+
+    // Preset band gains (dB), aligned to eqFrequencies
+    eqPresets: {
+        flat:   { label: 'Flat', gains: [0, 0, 0, 0, 0, 0, 0, 0] },
+        bass:   { label: 'Bass Boost', gains: [8, 6, 4, 1, 0, 0, 1, 2] },
+        treble: { label: 'Treble Boost', gains: [-2, -1, 0, 0, 1, 3, 5, 6] },
+        vocal:  { label: 'Vocal / Dialogue', gains: [-3, -2, 1, 4, 5, 3, 1, 0] },
+        movie:  { label: 'Movie', gains: [5, 3, 1, 0, 1, 2, 3, 4] },
+        music:  { label: 'Music', gains: [4, 2, 0, -1, -1, 0, 2, 3] },
+        rock:   { label: 'Rock', gains: [5, 3, -1, -2, 0, 2, 4, 5] },
+        party:  { label: 'Party', gains: [6, 5, 2, 0, 0, 2, 4, 5] },
+    },
+
+    formatFreq(freq) {
+        return freq >= 1000 ? `${freq / 1000}k` : `${freq}`;
+    },
+
+    renderEqualizer() {
+        const boostPct = Math.round(this.audioBoost * 100);
+        return `
+            <div class="eq-bar" id="eq-bar">
+                <div class="subtitle-bar-header">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+                        <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+                        <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+                    </svg>
+                    <span>Audio Booster &amp; Equalizer</span>
+                    <label class="eq-switch">
+                        <input type="checkbox" id="eq-enable" ${this.audioEnabled ? 'checked' : ''}>
+                        <span class="eq-switch-track"><span class="eq-switch-thumb"></span></span>
+                    </label>
+                </div>
+
+                <div class="eq-boost-row">
+                    <span class="eq-row-label">Volume Boost</span>
+                    <input type="range" class="eq-boost-slider" id="eq-boost" min="100" max="500" step="10" value="${boostPct}">
+                    <span class="eq-boost-value" id="eq-boost-value">${boostPct}%</span>
+                </div>
+
+                <div class="eq-preset-row">
+                    <span class="eq-row-label">Preset</span>
+                    <select class="eq-preset-select" id="eq-preset">
+                        ${Object.entries(this.eqPresets).map(([key, p]) => `
+                            <option value="${key}" ${this.audioPreset === key ? 'selected' : ''}>${p.label}</option>
+                        `).join('')}
+                        <option value="custom" ${this.audioPreset === 'custom' ? 'selected' : ''}>Custom</option>
+                    </select>
+                    <button type="button" class="eq-reset-btn" id="eq-reset">Reset</button>
+                </div>
+
+                <div class="eq-bands" id="eq-bands">
+                    ${this.audioBands.map((b, i) => `
+                        <div class="eq-band">
+                            <input type="range" class="eq-band-slider" data-band="${i}"
+                                   min="-12" max="12" step="1" value="${b.gain}"
+                                   orient="vertical">
+                            <span class="eq-band-freq">${this.formatFreq(b.freq)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="eq-note" id="eq-note">Boost above 150% may distort. Applies to the active player's sound.</div>
+            </div>
+        `;
+    },
+
+    setEqNote(message, type = '') {
+        const el = document.getElementById('eq-note');
+        if (!el) return;
+        el.textContent = message;
+        el.className = `eq-note ${type}`;
+    },
+
+    applyAudioDebounced() {
+        clearTimeout(this._audioApplyTimer);
+        this._audioApplyTimer = setTimeout(() => this.applyAudio(), 140);
+    },
+
+    async applyAudio() {
+        if (this.audioEnabled && !this.isPlaying) {
+            this.setEqNote('Press play on the video first, then turn on the booster.', 'warn');
+            return;
+        }
+
+        try {
+            const res = await api.audio.apply({
+                enabled: this.audioEnabled,
+                gain: this.audioBoost,
+                bands: this.audioBands,
+            });
+
+            if (!res.success) {
+                this.setEqNote(res.error || 'Could not apply audio settings.', 'error');
+                return;
+            }
+
+            if (this.audioEnabled) {
+                this.setEqNote(`Booster on — ${Math.round(this.audioBoost * 100)}% volume.`, 'success');
+            } else {
+                this.setEqNote('Booster off — original sound restored.', '');
+            }
+        } catch (error) {
+            console.error('Audio apply failed:', error);
+            this.setEqNote(error.message || 'Could not apply audio settings.', 'error');
+        }
+    },
+
+    applyPreset(name) {
+        this.audioPreset = name;
+        if (name !== 'custom' && this.eqPresets[name]) {
+            const gains = this.eqPresets[name].gains;
+            this.audioBands = this.audioBands.map((b, i) => ({ freq: b.freq, gain: gains[i] ?? 0 }));
+            document.querySelectorAll('.eq-band-slider').forEach(slider => {
+                const idx = Number(slider.dataset.band);
+                slider.value = this.audioBands[idx].gain;
+            });
+        }
+        if (this.audioEnabled) this.applyAudio();
+    },
+
+    resetEqualizer() {
+        this.audioBoost = 1;
+        this.audioPreset = 'flat';
+        this.audioBands = this.audioBands.map(b => ({ freq: b.freq, gain: 0 }));
+
+        const boost = document.getElementById('eq-boost');
+        const boostValue = document.getElementById('eq-boost-value');
+        const preset = document.getElementById('eq-preset');
+        if (boost) boost.value = 100;
+        if (boostValue) boostValue.textContent = '100%';
+        if (preset) preset.value = 'flat';
+        document.querySelectorAll('.eq-band-slider').forEach(slider => { slider.value = 0; });
+
+        this.applyAudio();
+    },
+
+    /** Re-apply the audio graph after the player frame reloads. */
+    reapplyAudio() {
+        if (!this.audioEnabled) return;
+        setTimeout(() => this.applyAudio(), 1500);
+    },
+
+    getVidvaultQuery() {
+        const media = this.mediaData || {};
+        return {
+            type: this.mediaType === 'tv' ? 'tv' : 'movie',
+            tmdbId: this.mediaId,
+            season: this.currentSeason,
+            episode: this.currentEpisode,
+            title: media.title || media.name || '',
+            year: media.year || '',
+        };
+    },
+
+    async loadVidvaultSubtitles() {
+        const list = document.getElementById('subtitle-vault-list');
+        if (!list) return;
+
+        this.vidvaultLoading = true;
+        list.innerHTML = `<div class="subtitle-vault-empty">Looking up available subtitles…</div>`;
+
+        try {
+            const res = await api.subtitles.vidvaultList(this.getVidvaultQuery());
+            if (!res.success) {
+                this.vidvaultTracks = [];
+                list.innerHTML = `<div class="subtitle-vault-empty">${res.error || 'No subtitles found.'}</div>`;
+                return;
+            }
+
+            this.vidvaultTracks = res.tracks || [];
+            this.renderVidvaultList();
+        } catch (error) {
+            console.error('VidVault subtitle lookup failed:', error);
+            this.vidvaultTracks = [];
+            list.innerHTML = `<div class="subtitle-vault-empty">Failed to load subtitles.</div>`;
+        } finally {
+            this.vidvaultLoading = false;
+        }
+    },
+
+    renderVidvaultList() {
+        const list = document.getElementById('subtitle-vault-list');
+        if (!list) return;
+
+        if (!this.vidvaultTracks.length) {
+            list.innerHTML = `<div class="subtitle-vault-empty">No subtitles found for this title.</div>`;
+            return;
+        }
+
+        list.innerHTML = this.vidvaultTracks.map(track => `
+            <button type="button"
+                    class="subtitle-vault-btn ${this.loadingVaultId === track.id ? 'loading' : ''} ${this.activeSubtitleId === `vv-${track.id}` ? 'active' : ''}"
+                    data-vault-id="${track.id}">
+                <span class="subtitle-vault-lang">${track.label}</span>
+                ${track.size ? `<span class="subtitle-vault-size">${track.size}</span>` : ''}
+            </button>
+        `).join('');
+
+        list.querySelectorAll('[data-vault-id]').forEach(btn => {
+            btn.addEventListener('click', () => this.loadVidvaultTrack(btn.dataset.vaultId));
+        });
+    },
+
+    async loadVidvaultTrack(trackId) {
+        const track = this.vidvaultTracks.find(t => String(t.id) === String(trackId));
+        if (!track) return;
+
+        if (!this.isPlaying) {
+            this.setSubtitleStatus('Press play on the video first, then load a subtitle.', 'error');
+            return;
+        }
+
+        this.loadingVaultId = track.id;
+        this.renderVidvaultList();
+        this.setSubtitleStatus(`Loading ${track.label}…`, 'loading');
+
+        try {
+            const res = await api.subtitles.vidvaultLoad({
+                id: `vv-${track.id}`,
+                label: track.label,
+                lang: track.lang,
+                downloadUrl: track.downloadUrl,
+                url: track.url,
+                activate: true,
+            });
+
+            if (!res.success) {
+                this.setSubtitleStatus(res.error || 'Failed to load subtitle.', 'error');
+                return;
+            }
+
+            const existing = this.customSubtitles.findIndex(s => s.id === res.id);
+            if (existing >= 0) this.customSubtitles.splice(existing, 1);
+            this.customSubtitles.push({ id: res.id, label: res.label, content: res.content });
+            this.activeSubtitleId = res.id;
+            this.renderSubtitleList();
+            this.renderVidvaultList();
+            this.setSubtitleStatus(`"${res.label}" is now showing.`, 'success');
+        } catch (error) {
+            console.error('Failed to load VidVault subtitle:', error);
+            this.setSubtitleStatus(error.message || 'Failed to load subtitle.', 'error');
+        } finally {
+            this.loadingVaultId = null;
+            this.renderVidvaultList();
+        }
     },
 
     setSubtitleProgress(percent, text) {
@@ -442,25 +730,37 @@ const WatchPage = {
         const label = language ? `${language.name} (AI)` : code;
 
         if (btn) btn.disabled = true;
-        this.setSubtitleStatus('Reading the player\'s subtitle list…', 'loading');
+        this.setSubtitleStatus('Fetching English subtitle from VidVault…', 'loading');
         this.setSubtitleProgress(0, 'Starting…');
 
         api.subtitles.removeGenerateProgress();
         api.subtitles.onGenerateProgress((data) => {
             if (data.phase === 'locating') {
-                this.setSubtitleProgress(2, 'Locating player…');
+                this.setSubtitleProgress(2, 'Looking up VidVault…');
             } else if (data.phase === 'downloading') {
                 this.setSubtitleProgress(6, `Downloading ${data.source || 'English'} track…`);
             } else if (data.phase === 'translating') {
-                const pct = data.total ? 8 + Math.round((data.done / data.total) * 86) : 8;
-                this.setSubtitleProgress(pct, data.total ? `Translating ${data.done} / ${data.total} lines…` : 'Translating…');
+                const pct = data.total ? 10 + Math.round((data.done / data.total) * 84) : 10;
+                this.setSubtitleProgress(pct, data.total ? `Translating ${data.done} / ${data.total} lines…` : 'Connecting to translator…');
             } else if (data.phase === 'injecting') {
                 this.setSubtitleProgress(97, 'Adding to player…');
             }
         });
 
         try {
-            const res = await api.subtitles.generate({ targetLang: code, label });
+            const query = this.getVidvaultQuery();
+            const english = this.vidvaultTracks.find(t =>
+                /^en/i.test(t.lang) || /english/i.test(t.label)
+            );
+
+            const res = await api.subtitles.generate({
+                targetLang: code,
+                label,
+                ...query,
+                sourceDownloadUrl: english?.downloadUrl,
+                sourceUrl: english?.url,
+                sourceLabel: english?.label,
+            });
 
             if (!res.success) {
                 this.setSubtitleStatus(res.error || 'Could not generate the subtitle.', 'error');
@@ -471,6 +771,7 @@ const WatchPage = {
             this.customSubtitles.push({ id: res.id, label: res.label, content: res.content });
             this.activeSubtitleId = res.id;
             this.renderSubtitleList();
+            this.renderVidvaultList();
             this.setSubtitleProgress(100, 'Done');
             setTimeout(() => this.setSubtitleProgress(null), 1200);
 
@@ -615,6 +916,7 @@ const WatchPage = {
         }
         this.activeSubtitleId = id || null;
         this.renderSubtitleList();
+        this.renderVidvaultList();
         this.setSubtitleStatus(id ? 'Subtitle enabled.' : 'Subtitles off.', 'success');
     },
 
@@ -714,6 +1016,7 @@ const WatchPage = {
 
         // Refresh download options for the new episode
         this.searchTorrents();
+        this.loadVidvaultSubtitles();
     },
 
     async changeSeason(seasonNumber) {
@@ -735,6 +1038,7 @@ const WatchPage = {
 
             // Refresh download options for the new season/episode
             this.searchTorrents();
+            this.loadVidvaultSubtitles();
         } catch (error) {
             console.error('Failed to load season:', error);
             episodeGrid.innerHTML = '<div class="error-message">Failed to load episodes</div>';
@@ -799,6 +1103,42 @@ const WatchPage = {
 
         const subGenerateBtn = document.getElementById('subtitle-generate-btn');
         if (subGenerateBtn) subGenerateBtn.addEventListener('click', () => this.generateSubtitle());
+
+        // Audio booster / equalizer controls
+        const eqEnable = document.getElementById('eq-enable');
+        if (eqEnable) {
+            eqEnable.addEventListener('change', (e) => {
+                this.audioEnabled = e.target.checked;
+                this.applyAudio();
+            });
+        }
+
+        const eqBoost = document.getElementById('eq-boost');
+        if (eqBoost) {
+            eqBoost.addEventListener('input', (e) => {
+                this.audioBoost = Number(e.target.value) / 100;
+                const val = document.getElementById('eq-boost-value');
+                if (val) val.textContent = `${e.target.value}%`;
+                if (this.audioEnabled) this.applyAudioDebounced();
+            });
+        }
+
+        const eqPreset = document.getElementById('eq-preset');
+        if (eqPreset) eqPreset.addEventListener('change', (e) => this.applyPreset(e.target.value));
+
+        const eqReset = document.getElementById('eq-reset');
+        if (eqReset) eqReset.addEventListener('click', () => this.resetEqualizer());
+
+        document.querySelectorAll('.eq-band-slider').forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const idx = Number(e.target.dataset.band);
+                if (this.audioBands[idx]) this.audioBands[idx].gain = Number(e.target.value);
+                this.audioPreset = 'custom';
+                const presetSel = document.getElementById('eq-preset');
+                if (presetSel) presetSel.value = 'custom';
+                if (this.audioEnabled) this.applyAudioDebounced();
+            });
+        });
 
         // Season selector (for TV)
         const seasonSelect = document.getElementById('season-select');
@@ -1005,6 +1345,7 @@ const WatchPage = {
             iframe.src = playerUrl;
             this.isPlaying = true;
             this.reinjectSubtitles();
+            this.reapplyAudio();
 
             // Record "watched" activity if logged in
             if (localStorage.getItem('authToken')) {
@@ -1042,6 +1383,7 @@ const WatchPage = {
                 console.log(`[Player] Switching server to ${serverId}:`, playerUrl);
                 iframe.src = playerUrl;
                 this.reinjectSubtitles();
+                this.reapplyAudio();
             }
         } else {
             this.handlePlay();

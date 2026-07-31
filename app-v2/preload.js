@@ -99,9 +99,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
         remove: (id) => ipcRenderer.invoke('subtitle:remove', id),
         playerReady: () => ipcRenderer.invoke('subtitle:playerReady'),
         listTracks: () => ipcRenderer.invoke('subtitle:listTracks'),
+        vidvaultList: (options) => ipcRenderer.invoke('subtitle:vidvaultList', options),
+        vidvaultLoad: (options) => ipcRenderer.invoke('subtitle:vidvaultLoad', options),
         generate: (options) => ipcRenderer.invoke('subtitle:generate', options),
         onGenerateProgress: (callback) => ipcRenderer.on('subtitle:generateProgress', (event, data) => callback(data)),
         removeGenerateProgress: () => ipcRenderer.removeAllListeners('subtitle:generateProgress'),
+    },
+
+    // ─── Audio Booster / Equalizer ───
+    audio: {
+        apply: (cfg) => ipcRenderer.invoke('audio:apply', cfg),
+        reset: () => ipcRenderer.invoke('audio:reset'),
     },
 
     // ─── Version Check ───
