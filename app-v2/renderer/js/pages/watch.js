@@ -23,50 +23,36 @@ const WatchPage = {
             name: 'Vidnest',
             badge: 'Primary',
             getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://vidnest.fun/tv/${id}/${s}/${e}`
-                : `https://vidnest.fun/movie/${id}`
+                ? `https://vidnest.fun/tv/${id}/${s}/${e}?color=4ade80`
+                : `https://vidnest.fun/movie/${id}?color=4ade80`
+        },
+        {
+            id: 'videasy',
+            name: 'Videasy (High Quality)',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://player.videasy.to/tv/${id}/${s}/${e}?color=4ade80`
+                : `https://player.videasy.to/movie/${id}?color=4ade80`
+        },
+        {
+            id: 'vidking',
+            name: 'VidKing (High Quality)',
+            getUrl: (type, id, s, e) => type === 'tv'
+                ? `https://www.vidking.net/embed/tv/${id}/${s}/${e}?color=4ade80`
+                : `https://www.vidking.net/embed/movie/${id}?color=4ade80`
         },
         {
             id: 'vidrock',
             name: 'VidRock',
             getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://vidrock.net/embed/tv/${id}/${s}/${e}`
-                : `https://vidrock.net/embed/movie/${id}`
-        },
-        {
-            id: 'vidking',
-            name: 'VidKing',
-            getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://www.vidking.net/embed/tv/${id}/${s}/${e}`
-                : `https://www.vidking.net/embed/movie/${id}`
-        },
-        {
-            id: 'videasy',
-            name: 'Videasy',
-            getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://player.videasy.net/tv/${id}/${s}/${e}`
-                : `https://player.videasy.net/movie/${id}`
+                ? `https://vidrock.net/embed/tv/${id}/${s}/${e}?color=4ade80`
+                : `https://vidrock.net/embed/movie/${id}?color=4ade80`
         },
         {
             id: '111movies',
             name: '111Movies',
             getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://111movies.com/tv/${id}/${s}/${e}`
-                : `https://111movies.com/movie/${id}`
-        },
-        {
-            id: '2embed',
-            name: '2Embed',
-            getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://www.2embed.stream/embed/tv/${id}/${s}/${e}`
-                : `https://www.2embed.stream/embed/movie/${id}`
-        },
-        {
-            id: '2embed-v2',
-            name: '2Embed v2',
-            getUrl: (type, id, s, e) => type === 'tv'
-                ? `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
-                : `https://www.2embed.cc/embed/${id}`
+                ? `https://player.vidlove.cc/embed/tv/${id}/${s}/${e}?color=4ade80`
+                : `https://player.vidlove.cc/embed/movie/${id}?color=4ade80`
         }
     ],
 
@@ -1011,6 +997,7 @@ const WatchPage = {
                 iframe.className = 'video-player-iframe';
                 iframe.setAttribute('allowfullscreen', '');
                 iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture; encrypted-media');
+                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
                 iframe.style.cssText = 'width: 100%; height: 100%; border: none; border-radius: var(--radius-lg);';
                 playerContainer.appendChild(iframe);
             }
