@@ -108,6 +108,7 @@ const api = {
         listTracks: () => window.electronAPI.subtitles.listTracks(),
         vidvaultList: (options) => window.electronAPI.subtitles.vidvaultList(options),
         vidvaultLoad: (options) => window.electronAPI.subtitles.vidvaultLoad(options),
+        vidvaultVideoDownloads: (options) => window.electronAPI.subtitles.vidvaultVideoDownloads(options),
         generate: (options) => window.electronAPI.subtitles.generate(options),
         onGenerateProgress: (cb) => window.electronAPI.subtitles.onGenerateProgress(cb),
         removeGenerateProgress: () => window.electronAPI.subtitles.removeGenerateProgress(),

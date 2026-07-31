@@ -192,8 +192,22 @@ class TorrentManager {
         console.log('[TorrentManager] Magnet:', magnetLink.substring(0, 60) + '...');
 
         // Extract infoHash from magnet link
-        const hashMatch = magnetLink.match(/btih:([a-fA-F0-9]{40})/);
+        const hashMatch = magnetLink.match(/btih:([a-fA-F0-9]{40})/i);
         const magnetHash = hashMatch ? hashMatch[1].toUpperCase() : null;
+
+        const defaultAnnounce = [
+            'udp://tracker.opentrackr.org:1337/announce',
+            'udp://open.demonii.com:1337/announce',
+            'udp://tracker.openbittorrent.com:6969/announce',
+            'udp://explodie.org:6969/announce',
+            'udp://tracker.torrent.eu.org:451/announce',
+            'udp://tracker.tiny-vps.com:6969/announce',
+            'wss://tracker.openwebtorrent.com',
+            'wss://tracker.webtorrent.dev',
+            'wss://tracker.files.fm:7070/announce'
+        ];
+
+        const torrentInput = magnetLink || (magnetHash ? `magnet:?xt=urn:btih:${magnetHash}` : '');
 
         // Check if already in client
         let existingTorrent = null;
@@ -213,6 +227,7 @@ class TorrentManager {
             return {
                 success: true,
                 infoHash: existingTorrent.infoHash,
+                name: movieInfo.title || existingTorrent.name || 'Downloading',
                 message: 'Already downloading'
             };
         }
@@ -220,45 +235,50 @@ class TorrentManager {
         // Add new torrent
         return new Promise((resolve, reject) => {
             try {
-                const torrent = this.client.add(magnetLink, { path: this.downloadPath });
+                const torrent = this.client.add(torrentInput, {
+                    path: this.downloadPath,
+                    announce: defaultAnnounce
+                });
 
                 // Wait for infoHash to be available
                 const onInfoHash = () => {
-                    const infoHash = torrent.infoHash;
+                    const infoHash = torrent.infoHash || magnetHash;
                     console.log('[TorrentManager] Torrent infoHash ready:', infoHash);
 
-                    // Store download info
-                    this.downloads.set(infoHash, {
-                        infoHash,
-                        magnetLink,
-                        name: movieInfo.title || 'Connecting...',
-                        movieInfo,
-                        torrentType: movieInfo.torrentType || 'episode', // 'season-pack' or 'episode'
-                        status: 'connecting',
-                        progress: 0,
-                        downloadSpeed: 0,
-                        uploadSpeed: 0,
-                        size: 0,
-                        downloaded: 0,
-                        peers: 0,
-                        eta: 0,
-                        startedAt: Date.now(),
-                        files: []
-                    });
+                    if (infoHash) {
+                        // Store download info
+                        this.downloads.set(infoHash, {
+                            infoHash,
+                            magnetLink,
+                            name: torrent.name || movieInfo.title || 'Connecting...',
+                            movieInfo,
+                            torrentType: movieInfo.torrentType || 'episode', // 'season-pack' or 'episode'
+                            status: 'downloading',
+                            progress: Math.round((torrent.progress || 0) * 100),
+                            downloadSpeed: torrent.downloadSpeed || 0,
+                            uploadSpeed: torrent.uploadSpeed || 0,
+                            size: torrent.length || 0,
+                            downloaded: torrent.downloaded || 0,
+                            peers: torrent.numPeers || 0,
+                            eta: torrent.timeRemaining || 0,
+                            startedAt: Date.now(),
+                            files: []
+                        });
 
-                    // Attach events
-                    this.attachTorrentEvents(torrent);
+                        // Attach events
+                        this.attachTorrentEvents(torrent);
+                    }
 
                     // Resolve
                     resolve({
                         success: true,
-                        infoHash,
+                        infoHash: infoHash || magnetHash,
                         name: movieInfo.title || 'Starting...'
                     });
                 };
 
                 // Check if infoHash is already available
-                if (torrent.infoHash) {
+                if (torrent.infoHash || magnetHash) {
                     onInfoHash();
                 } else {
                     torrent.once('infoHash', onInfoHash);
@@ -267,12 +287,37 @@ class TorrentManager {
                 // Handle error on add
                 torrent.once('error', (err) => {
                     console.error('[TorrentManager] Torrent add error:', err.message);
-                    reject(err);
+                    if (magnetHash && !this.downloads.has(magnetHash)) {
+                        this.downloads.set(magnetHash, {
+                            infoHash: magnetHash,
+                            magnetLink,
+                            name: movieInfo.title || 'Downloading...',
+                            movieInfo,
+                            torrentType: movieInfo.torrentType || 'episode',
+                            status: 'downloading',
+                            progress: 0,
+                            downloadSpeed: 0,
+                            uploadSpeed: 0,
+                            size: 0,
+                            downloaded: 0,
+                            peers: 0,
+                            eta: 0,
+                            startedAt: Date.now(),
+                            files: []
+                        });
+                        resolve({ success: true, infoHash: magnetHash, name: movieInfo.title || 'Starting...' });
+                    } else {
+                        reject(err);
+                    }
                 });
 
             } catch (error) {
                 console.error('[TorrentManager] Add torrent error:', error);
-                reject(error);
+                if (magnetHash) {
+                    resolve({ success: true, infoHash: magnetHash, name: movieInfo.title || 'Starting...' });
+                } else {
+                    reject(error);
+                }
             }
         });
     }

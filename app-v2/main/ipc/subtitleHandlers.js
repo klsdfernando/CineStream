@@ -8,7 +8,18 @@
 
 const { ipcMain } = require('electron');
 const { translateVTT } = require('../services/subtitleTranslator');
-const { listSubtitles, downloadSubtitle, pickEnglishTrack } = require('../services/vidvault');
+const { listSubtitles, downloadSubtitle, pickEnglishTrack, getVideoDownloads } = require('../services/vidvault');
+
+// List video download links from VidVault
+ipcMain.handle('subtitle:vidvaultVideoDownloads', async (_event, options) => {
+    try {
+        const downloads = await getVideoDownloads(options || {});
+        return { success: true, downloads };
+    } catch (error) {
+        console.error('[VidVault] Video downloads fetch failed:', error);
+        return { success: false, error: error.message || 'Failed to fetch video downloads from VidVault.' };
+    }
+});
 
 const HAS_VIDEO = `(() => { try { return !!document.querySelector('video'); } catch (e) { return false; } })()`;
 

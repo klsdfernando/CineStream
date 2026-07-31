@@ -11,6 +11,10 @@ const { registerPlaylistHandlers } = require('./main/ipc/playlistHandlers');
 const { registerReportHandlers } = require('./main/ipc/reportHandlers');
 const { registerTorrentHandlers } = require('./main/ipc/torrentHandlers');
 const { registerSubtitleHandlers } = require('./main/ipc/subtitleHandlers');
+const { registerStreamHandlers } = require('./main/ipc/streamHandlers');
+
+const streamSniffer = require('./main/services/streamSniffer');
+const streamDownloader = require('./main/services/streamDownloader');
 
 // Keep a global reference of the window object
 let mainWindow;
@@ -41,25 +45,32 @@ const BLOCKED_DOMAINS = [
 ];
 
 /**
- * Setup ad blocker using webRequest API
+ * Setup webRequest listener for ad blocker & stream sniffer
  */
-function setupAdBlocker() {
+function setupWebRequestHandlers() {
     const filter = { urls: ['*://*/*'] };
 
-    // Block requests to ad domains
     session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
         const url = details.url.toLowerCase();
         const shouldBlock = BLOCKED_DOMAINS.some(domain => url.includes(domain));
 
         if (shouldBlock) {
             console.log('[AdBlocker] Blocked:', url.substring(0, 80));
-            callback({ cancel: true });
-        } else {
-            callback({ cancel: false });
+            return callback({ cancel: true });
         }
+
+        // Pass to stream sniffer if it matches stream formats (.m3u8, .mp4, master.txt, playlist.txt, index.txt)
+        if (url.includes('.m3u8') || url.includes('.mp4') || url.includes('master.txt') || url.includes('playlist.txt') || url.includes('index.txt')) {
+            if (!streamSniffer.shouldIgnoreUrl(url)) {
+                const playerSource = streamSniffer.identifyPlayerSource(details.referrer || details.url);
+                streamSniffer.processDetectedUrl(details.url, playerSource, details.referrer);
+            }
+        }
+
+        callback({ cancel: false });
     });
 
-    console.log('[AdBlocker] Ad blocker initialized with', BLOCKED_DOMAINS.length, 'blocked domains');
+    console.log('[WebRequest] Combined Ad blocker & Stream Sniffer initialized');
 }
 
 function createWindow() {
@@ -176,8 +187,8 @@ ipcMain.handle('shell:openExternal', async (event, url) => {
 
 // App ready
 app.whenReady().then(() => {
-    // Setup ad blocker before creating window
-    setupAdBlocker();
+    // Setup webRequest listener for ad blocker & stream sniffer
+    setupWebRequestHandlers();
 
     // Register all IPC handlers
     registerTmdbHandlers();
@@ -187,11 +198,14 @@ app.whenReady().then(() => {
     registerReportHandlers();
     registerTorrentHandlers();
     registerSubtitleHandlers();
+    registerStreamHandlers();
 
     createWindow();
 
-    // Initialize torrent manager
+    // Initialize services with main window
     torrentManager.init(mainWindow);
+    streamSniffer.init(mainWindow);
+    streamDownloader.init(mainWindow);
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

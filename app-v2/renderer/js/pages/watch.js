@@ -203,7 +203,38 @@ const WatchPage = {
                     ${this.renderEqualizer()}
                 </div>
 
-                <!-- Download Section -->
+                <!-- Direct Web Stream Download Section -->
+                <div class="download-section direct-stream-section" id="direct-stream-section">
+                    <div class="download-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                            <polyline points="13 2 13 9 20 9"/>
+                        </svg>
+                        <span>Direct Web Stream Downloads (HLS / MP4)</span>
+                        <span class="stream-badge-info">Auto-Sniffed Streams</span>
+                    </div>
+                    <div class="download-options" id="direct-stream-options">
+                        <div class="download-empty">Play video to sniff direct stream links (Vidnest / VidLink / Videasy)</div>
+                    </div>
+                </div>
+
+                <!-- VidVault Direct Download Section -->
+                <div class="download-section vidvault-download-section" id="vidvault-download-section">
+                    <div class="download-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span>VidVault Direct Downloads (Fast MP4)</span>
+                        <span class="vidvault-badge-info">VidVault API</span>
+                    </div>
+                    <div class="download-options" id="vidvault-download-options">
+                        <div class="download-empty"><div class="spinner-small" style="display:inline-block; vertical-align:middle; margin-right:8px;"></div> Loading VidVault download links...</div>
+                    </div>
+                </div>
+
+                <!-- Torrent Download Section -->
                 <div class="download-section" id="download-section">
                     <div class="download-header">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -211,7 +242,7 @@ const WatchPage = {
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                        <span>Download</span>
+                        <span>Torrent Downloads</span>
                         <div class="download-loading" id="download-loading">
                             <div class="spinner-small"></div>
                             <span>Searching torrents...</span>
@@ -330,8 +361,10 @@ const WatchPage = {
         this.attachEventListeners();
         this.checkInteractionStatus(); // Set initial state for Like/Dislike buttons
 
-        // Search for available torrents
+        // Search for available torrents, stream sniffer & VidVault downloads
         this.searchTorrents();
+        this.setupStreamSniffer();
+        this.loadVidvaultVideoDownloads();
         this.loadVidvaultSubtitles();
     },
 
@@ -1602,6 +1635,229 @@ const WatchPage = {
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg> Download`;
                     }, 2000);
+                }
+            });
+        });
+    },
+
+    /**
+     * Setup HLS/m3u8 Stream Sniffer listeners
+     */
+    setupStreamSniffer() {
+        if (!window.electronAPI || !window.electronAPI.directStream) return;
+
+        // Clear previous streams on initial load
+        window.electronAPI.directStream.clearStreams();
+
+        // Listen to stream detected event
+        window.electronAPI.directStream.onStreamDetected((streams) => {
+            this.renderDirectStreams(streams);
+        });
+
+        // Listen for progress updates
+        window.electronAPI.directStream.onDownloadProgress((progressData) => {
+            this.updateDirectStreamDownloadProgress(progressData);
+        });
+
+        // Auto prefetch background streams for all player servers (Vidnest, Videasy, VidKing, VidRock)
+        window.electronAPI.directStream.prefetch({
+            mediaType: this.mediaType,
+            mediaId: this.mediaId,
+            season: this.currentSeason,
+            episode: this.currentEpisode
+        });
+    },
+
+    renderDirectStreams(streams) {
+        const container = document.getElementById('direct-stream-options');
+        if (!container) return;
+
+        if (!streams || streams.length === 0) {
+            container.innerHTML = `<div class="download-empty"><div class="spinner-small" style="display:inline-block; vertical-align:middle; margin-right:8px;"></div> Auto-sniffing stream servers (Videasy, VidKing, VidRock, Vidnest)...</div>`;
+            return;
+        }
+
+        container.innerHTML = streams.map(s => this.renderDirectStreamOption(s)).join('');
+        this.attachDirectStreamListeners(streams);
+    },
+
+    renderDirectStreamOption(stream) {
+        const qualityClass = `q-${(stream.quality || 'hd').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+        return `
+            <div class="download-option direct-stream-option" data-stream-id="${stream.id}">
+                <div class="download-option-info">
+                    <div class="download-quality">
+                        <span class="quality-badge ${qualityClass}">${stream.quality || 'HD Stream'}</span>
+                        <span class="player-source-badge">${stream.playerSource || 'Web Player'}</span>
+                    </div>
+                    <div class="download-details">
+                        <span class="pixel-size-tag">📐 Pixel Size: <strong>${stream.pixelSize}</strong></span>
+                        <span class="stream-type-tag">${stream.type ? stream.type.toUpperCase() : 'HLS'}</span>
+                    </div>
+                </div>
+                <div class="stream-action-btns">
+                    <button class="download-btn direct-download-btn" data-stream-id="${stream.id}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Direct Download
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    attachDirectStreamListeners(streams) {
+        // Direct Download buttons
+        document.querySelectorAll('.direct-download-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const streamId = btn.dataset.streamId;
+                const stream = streams.find(s => s.id === streamId);
+                if (!stream) return;
+
+                btn.disabled = true;
+                btn.innerHTML = `<div class="spinner-small"></div> Starting...`;
+
+                try {
+                    const mediaInfo = {
+                        title: this.mediaData?.title || this.mediaData?.name || 'Movie',
+                        poster: this.mediaData?.poster,
+                        season: this.mediaType === 'tv' ? this.currentSeason : null,
+                        episode: this.mediaType === 'tv' ? this.currentEpisode : null
+                    };
+
+                    const res = await window.electronAPI.directStream.startDownload(stream, mediaInfo);
+                    if (res && res.success) {
+                        btn.innerHTML = `✓ Started`;
+                        btn.classList.add('downloading');
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = `Error`;
+                    }
+                } catch (err) {
+                    console.error('Direct download error:', err);
+                    btn.disabled = false;
+                    btn.innerHTML = `Error`;
+                }
+            });
+        });
+    },
+
+    updateDirectStreamDownloadProgress(progressData) {
+        if (!progressData) return;
+        const btn = document.querySelector(`.direct-stream-option[data-stream-id="${progressData.id}"] .direct-download-btn`);
+        if (btn) {
+            if (progressData.status === 'downloading') {
+                btn.innerHTML = `⏬ ${progressData.progress}%`;
+            } else if (progressData.status === 'completed') {
+                btn.innerHTML = `✓ Downloaded`;
+                btn.classList.remove('downloading');
+                btn.disabled = false;
+            }
+        }
+    },
+
+    /**
+     * Load video download links directly from VidVault API
+     */
+    async loadVidvaultVideoDownloads() {
+        const optionsEl = document.getElementById('vidvault-download-options');
+        if (!optionsEl) return;
+
+        try {
+            const query = {
+                type: this.mediaType,
+                tmdbId: this.mediaId,
+                season: this.currentSeason,
+                episode: this.currentEpisode
+            };
+
+            const res = await api.subtitles.vidvaultVideoDownloads(query);
+
+            if (res && res.success && res.downloads && res.downloads.length > 0) {
+                optionsEl.innerHTML = res.downloads.map(d => this.renderVidvaultVideoOption(d)).join('');
+                this.attachVidvaultDownloadListeners(res.downloads);
+            } else {
+                optionsEl.innerHTML = `<div class="download-empty">No VidVault download links available for this title</div>`;
+            }
+        } catch (error) {
+            console.error('[VidVault] Failed to load video downloads:', error);
+            optionsEl.innerHTML = `<div class="download-empty">Failed to load VidVault video downloads</div>`;
+        }
+    },
+
+    renderVidvaultVideoOption(download) {
+        const qualityClass = `q-${(download.quality || 'hd').toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+        return `
+            <div class="download-option vidvault-option" data-vidvault-id="${download.id}">
+                <div class="download-option-info">
+                    <div class="download-quality">
+                        <span class="quality-badge ${qualityClass}">${download.quality || 'HD MP4'}</span>
+                        <span class="vidvault-source-badge">VidVault Server Direct</span>
+                    </div>
+                    <div class="download-details">
+                        <span class="pixel-size-tag">📐 Pixel Size: <strong>${download.pixelSize}</strong></span>
+                        ${download.sizeFormatted ? `<span class="file-size-tag">📦 Size: <strong>${download.sizeFormatted}</strong></span>` : ''}
+                        <span class="stream-type-tag">${download.format || 'MP4'}</span>
+                    </div>
+                </div>
+                <div class="stream-action-btns">
+                    <button class="download-btn vidvault-direct-download-btn" data-url="${download.url}" data-quality="${download.quality}" data-pixel-size="${download.pixelSize}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Direct Download
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    attachVidvaultDownloadListeners(downloads) {
+        document.querySelectorAll('.vidvault-direct-download-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const url = btn.dataset.url;
+                const quality = btn.dataset.quality || 'HD MP4';
+                const pixelSize = btn.dataset.pixelSize || '1080p';
+                if (!url) return;
+
+                btn.disabled = true;
+                btn.innerHTML = `<div class="spinner-small"></div> Starting...`;
+
+                try {
+                    const streamInfo = {
+                        url: url,
+                        quality: quality,
+                        pixelSize: pixelSize,
+                        playerSource: 'VidVault Server Direct',
+                        type: 'mp4'
+                    };
+
+                    const mediaInfo = {
+                        title: this.mediaData?.title || this.mediaData?.name || 'Movie',
+                        poster: this.mediaData?.poster,
+                        season: this.mediaType === 'tv' ? this.currentSeason : null,
+                        episode: this.mediaType === 'tv' ? this.currentEpisode : null
+                    };
+
+                    const res = await window.electronAPI.directStream.startDownload(streamInfo, mediaInfo);
+                    if (res && res.success) {
+                        btn.innerHTML = `✓ Started`;
+                        btn.classList.add('downloading');
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = `Error`;
+                    }
+                } catch (err) {
+                    console.error('VidVault download error:', err);
+                    btn.disabled = false;
+                    btn.innerHTML = `Error`;
                 }
             });
         });

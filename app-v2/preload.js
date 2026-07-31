@@ -101,6 +101,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         listTracks: () => ipcRenderer.invoke('subtitle:listTracks'),
         vidvaultList: (options) => ipcRenderer.invoke('subtitle:vidvaultList', options),
         vidvaultLoad: (options) => ipcRenderer.invoke('subtitle:vidvaultLoad', options),
+        vidvaultVideoDownloads: (options) => ipcRenderer.invoke('subtitle:vidvaultVideoDownloads', options),
         generate: (options) => ipcRenderer.invoke('subtitle:generate', options),
         onGenerateProgress: (callback) => ipcRenderer.on('subtitle:generateProgress', (event, data) => callback(data)),
         removeGenerateProgress: () => ipcRenderer.removeAllListeners('subtitle:generateProgress'),
@@ -137,6 +138,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
             ipcRenderer.removeAllListeners('torrent:progress');
             ipcRenderer.removeAllListeners('torrent:completed');
             ipcRenderer.removeAllListeners('torrent:error');
+        }
+    },
+
+    // ─── Direct Stream / HLS controls ───
+    directStream: {
+        getStreams: () => ipcRenderer.invoke('stream:getCaptured'),
+        clearStreams: () => ipcRenderer.invoke('stream:clear'),
+        prefetch: (params) => ipcRenderer.invoke('stream:prefetch', params),
+        startDownload: (streamInfo, mediaInfo) => ipcRenderer.invoke('stream:startDownload', { streamInfo, mediaInfo }),
+        cancelDownload: (downloadId) => ipcRenderer.invoke('stream:cancelDownload', downloadId),
+        getAllDownloads: () => ipcRenderer.invoke('stream:getAllDownloads'),
+
+        // Event listeners
+        onStreamDetected: (callback) => ipcRenderer.on('stream:detected', (event, data) => callback(data)),
+        onDownloadProgress: (callback) => ipcRenderer.on('stream:download-progress', (event, data) => callback(data)),
+
+        removeAllListeners: () => {
+            ipcRenderer.removeAllListeners('stream:detected');
+            ipcRenderer.removeAllListeners('stream:download-progress');
         }
     },
 

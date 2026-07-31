@@ -1,9 +1,9 @@
 /**
- * VidVault subtitle source
+ * VidVault subtitle & video source
  *
- * Uses the same public endpoints as https://vidvault.ru/:
+ * Uses public endpoints from https://vidvault.ru/:
  *   GET  /api/get-token
- *   POST /api/download-proxy  → mp4Data.*.captions[]
+ *   POST /api/download-proxy  → mp4Data.*.captions[], mp4Data.*.downloads[]
  *   GET  https://sub.k5s7sjozpn.workers.dev/?url=&title=  (download proxy)
  */
 
@@ -17,7 +17,8 @@ function formatSize(bytes) {
     if (!Number.isFinite(n) || n <= 0) return '';
     if (n < 1024) return `${n} B`;
     if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-    return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+    if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function findCaptions(obj, depth = 0) {
@@ -32,6 +33,21 @@ function findCaptions(obj, depth = 0) {
     return null;
 }
 
+function findDownloads(obj, depth = 0) {
+    if (!obj || typeof obj !== 'object' || depth > 8) return [];
+    let list = [];
+    if (Array.isArray(obj.downloads)) {
+        list = list.concat(obj.downloads);
+    }
+    for (const value of Object.values(obj)) {
+        if (value && typeof value === 'object') {
+            const found = findDownloads(value, depth + 1);
+            if (found.length > 0) list = list.concat(found);
+        }
+    }
+    return list;
+}
+
 async function getToken() {
     const res = await fetch(`${API_BASE}/get-token`, {
         headers: { 'User-Agent': UA, Accept: 'application/json' },
@@ -43,7 +59,7 @@ async function getToken() {
 }
 
 /**
- * @param {{ type: 'movie'|'tv', tmdbId: string|number, season?: number, episode?: number, title?: string, year?: string|number }} opts
+ * Fetch subtitles list from VidVault
  */
 async function listSubtitles(opts) {
     const { type, tmdbId, season, episode, title, year } = opts || {};
@@ -92,6 +108,80 @@ async function listSubtitles(opts) {
         }));
 }
 
+/**
+ * Fetch direct video download links from VidVault
+ */
+async function getVideoDownloads(opts) {
+    const { type, tmdbId, season, episode } = opts || {};
+    if (!tmdbId) throw new Error('Missing TMDB id');
+
+    const token = await getToken();
+    const body = {
+        type: type === 'tv' ? 'tv' : 'movie',
+        tmdbId: String(tmdbId),
+    };
+    if (body.type === 'tv') {
+        body.season = Number(season) || 1;
+        body.episode = Number(episode) || 1;
+    }
+
+    const res = await fetch(`${API_BASE}/download-proxy`, {
+        method: 'POST',
+        headers: {
+            'User-Agent': UA,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'x-request-token': token,
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!res.ok) throw new Error(`VidVault video lookup failed (HTTP ${res.status})`);
+    const data = await res.json();
+    const rawDownloads = findDownloads(data);
+
+    // Deduplicate by URL & filter out valid items
+    const seen = new Set();
+    const result = [];
+
+    for (const d of rawDownloads) {
+        if (!d || !d.url || d.vipLocked || seen.has(d.url)) continue;
+        seen.add(d.url);
+
+        const resNum = Number(d.resolution) || 0;
+        let qualityLabel = `${resNum}p`;
+        let pixelSize = `${resNum}p`;
+
+        if (resNum >= 1080) { qualityLabel = '1080p Full HD'; pixelSize = '1920 x 1080 px'; }
+        else if (resNum >= 720) { qualityLabel = '720p HD'; pixelSize = '1280 x 720 px'; }
+        else if (resNum >= 480) { qualityLabel = '480p SD'; pixelSize = '854 x 480 px'; }
+        else if (resNum >= 360) { qualityLabel = '360p SD'; pixelSize = '640 x 360 px'; }
+
+        let targetUrl = String(d.url);
+        if (targetUrl.includes('bcdnxw.hakunaymatata.com') && !targetUrl.includes('v1.streamrk.site')) {
+            targetUrl = `https://v1.streamrk.site/${encodeURIComponent(targetUrl)}`;
+        }
+
+        result.push({
+            id: String(d.id || Math.random().toString(36).substring(2, 9)),
+            format: (d.format || 'MP4').toUpperCase(),
+            resolution: resNum,
+            quality: qualityLabel,
+            pixelSize: pixelSize,
+            sizeBytes: Number(d.size) || 0,
+            sizeFormatted: formatSize(d.size),
+            url: targetUrl,
+            rawUrl: String(d.url),
+            playerSource: 'VidVault Server Direct',
+            type: 'mp4'
+        });
+    }
+
+    // Sort by resolution descending
+    result.sort((a, b) => b.resolution - a.resolution);
+    return result;
+}
+
 /** Prefer the signed CDN URL (works from Node); fall back to VidVault's download proxy. */
 async function downloadSubtitle(downloadUrl, fallbackUrl) {
     const tryFetch = async (url) => {
@@ -106,7 +196,6 @@ async function downloadSubtitle(downloadUrl, fallbackUrl) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         if (!text || text.length < 20) throw new Error('Empty subtitle file');
-        // Reject HTML error pages mistaken for subtitles.
         if (/^\s*<(!doctype|html)/i.test(text)) throw new Error('Got HTML instead of a subtitle file');
         return text;
     };
@@ -133,6 +222,7 @@ function pickEnglishTrack(tracks) {
 
 module.exports = {
     listSubtitles,
+    getVideoDownloads,
     downloadSubtitle,
     pickEnglishTrack,
 };

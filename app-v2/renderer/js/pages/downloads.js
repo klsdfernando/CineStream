@@ -52,11 +52,34 @@ const DownloadsPage = {
 
     async loadDownloads() {
         try {
+            let torrentDownloads = [];
+            let directStreamDownloads = [];
+
             if (window.electronAPI && window.electronAPI.torrent) {
-                this.downloads = await window.electronAPI.torrent.getAll();
+                torrentDownloads = await window.electronAPI.torrent.getAll();
                 const path = await window.electronAPI.torrent.getPath();
-                document.getElementById('download-path').textContent = path;
+                const pathEl = document.getElementById('download-path');
+                if (pathEl) pathEl.textContent = path;
             }
+
+            if (window.electronAPI && window.electronAPI.directStream) {
+                directStreamDownloads = await window.electronAPI.directStream.getAllDownloads();
+            }
+
+            // Combine both downloads
+            this.downloads = [
+                ...torrentDownloads.map(d => ({ ...d, downloadType: 'torrent' })),
+                ...directStreamDownloads.map(d => ({
+                    ...d,
+                    downloadType: 'directStream',
+                    movieInfo: {
+                        title: d.title,
+                        poster: d.poster,
+                        mediaType: d.season ? 'tv' : 'movie'
+                    }
+                }))
+            ];
+
             this.renderDownloads('active');
         } catch (error) {
             console.error('Failed to load downloads:', error);
@@ -193,16 +216,19 @@ const DownloadsPage = {
     },
 
     renderDownloadCard(download, isEpisode = false) {
-        const progress = download.progress || 0;
-        const speed = this.formatSpeed(download.downloadSpeed || 0);
-        const eta = this.formatETA(download.eta || 0);
-        const size = this.formatBytes(download.size || 0);
-        const downloaded = this.formatBytes(download.downloaded || 0);
+        const isDirectStream = download.downloadType === 'directStream';
+        const cardIdAttr = isDirectStream ? `data-stream-id="${download.id}"` : `data-hash="${download.infoHash}"`;
 
-        // For episode cards, show episode number or season for season packs
+        const progress = download.progress || 0;
+        const speed = this.formatSpeed(download.speed || download.downloadSpeed || 0);
+        const eta = this.formatETA(download.eta || 0);
+        const size = download.totalBytes ? this.formatBytes(download.totalBytes) : (download.size ? this.formatBytes(download.size) : '');
+        const downloaded = this.formatBytes(download.downloadedBytes || download.downloaded || 0);
+
         let displayTitle;
-        if (isEpisode) {
-            // Check if it's a season pack (type or name contains SEASON PACK)
+        if (isDirectStream) {
+            displayTitle = `${download.title || 'Direct Stream Download'} [${download.playerSource || 'Web Stream'}]`;
+        } else if (isEpisode) {
             const isSeasonPack = download.torrentType === 'season-pack' ||
                 (download.name && download.name.includes('SEASON')) ||
                 (download.name && download.name.includes('PACK'));
@@ -218,18 +244,23 @@ const DownloadsPage = {
             displayTitle = download.movieInfo?.title || download.name || 'Unknown';
         }
 
+        const posterSrc = download.poster || download.movieInfo?.poster || 'assets/placeholder.png';
+
         return `
-            <div class="download-card ${isEpisode ? 'episode-card' : ''}" data-hash="${download.infoHash}">
+            <div class="download-card ${isEpisode ? 'episode-card' : ''}" ${cardIdAttr}>
                 <div class="download-card-header">
                     ${!isEpisode ? `
                         <img class="download-card-poster" 
-                             src="${download.movieInfo?.poster || 'assets/placeholder.png'}" 
-                             alt="${download.name}"
+                             src="${posterSrc}" 
+                             alt="${displayTitle}"
                              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 150%22><rect fill=%22%23333%22 width=%22100%22 height=%22150%22/></svg>'">
                     ` : ''}
                     <div class="download-card-info">
                         <div class="download-card-title">${displayTitle}</div>
-                        <div class="download-card-meta">${downloaded} / ${size}</div>
+                        <div class="download-card-meta">
+                            ${downloaded}${size ? ` / ${size}` : ''}
+                            ${download.pixelSize ? `<span class="pixel-size-badge" style="margin-left: 8px; font-size:11px; background:#1e293b; color:#38bdf8; padding:2px 6px; border-radius:4px;">${download.pixelSize}</span>` : ''}
+                        </div>
                         <span class="download-card-status ${download.status}">${download.status}</span>
                     </div>
                 </div>
@@ -242,25 +273,25 @@ const DownloadsPage = {
                         <span>${progress}%</span>
                         ${download.status === 'downloading' ? `
                             <span class="download-speed">${speed}</span>
-                            <span>ETA: ${eta}</span>
+                            ${!isDirectStream ? `<span>ETA: ${eta}</span>` : ''}
                         ` : ''}
-                        <span>${download.peers || 0} peers</span>
+                        ${isDirectStream ? `<span style="color:#60a5fa;">Direct Stream</span>` : `<span>${download.peers || 0} peers</span>`}
                     </div>
                 </div>
 
                 <div class="download-card-actions">
-                    ${download.status === 'downloading' ? `
+                    ${!isDirectStream && download.status === 'downloading' ? `
                         <button class="download-action-btn pause" data-action="pause" data-hash="${download.infoHash}">
                             <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                             Pause
                         </button>
-                    ` : download.status === 'paused' ? `
+                    ` : !isDirectStream && download.status === 'paused' ? `
                         <button class="download-action-btn resume" data-action="resume" data-hash="${download.infoHash}">
                             <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Resume
                         </button>
                     ` : ''}
-                    <button class="download-action-btn cancel" data-action="cancel" data-hash="${download.infoHash}">
+                    <button class="download-action-btn cancel" data-action="cancel" ${isDirectStream ? `data-stream-id="${download.id}"` : `data-hash="${download.infoHash}"`}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         Remove
                     </button>
@@ -274,8 +305,21 @@ const DownloadsPage = {
             btn.addEventListener('click', async (e) => {
                 const action = btn.dataset.action;
                 const hash = btn.dataset.hash;
+                const streamId = btn.dataset.streamId;
 
-                if (window.electronAPI && window.electronAPI.torrent) {
+                if (streamId && window.electronAPI && window.electronAPI.directStream) {
+                    try {
+                        if (action === 'cancel') {
+                            await window.electronAPI.directStream.cancelDownload(streamId);
+                        }
+                        await this.loadDownloads();
+                    } catch (error) {
+                        console.error(`Failed to ${action} direct stream download:`, error);
+                    }
+                    return;
+                }
+
+                if (hash && window.electronAPI && window.electronAPI.torrent) {
                     try {
                         if (action === 'pause') {
                             await window.electronAPI.torrent.pause(hash);
@@ -303,6 +347,9 @@ const DownloadsPage = {
         if (window.electronAPI && window.electronAPI.torrent && window.electronAPI.torrent.removeAllListeners) {
             window.electronAPI.torrent.removeAllListeners();
         }
+        if (window.electronAPI && window.electronAPI.directStream && window.electronAPI.directStream.removeAllListeners) {
+            window.electronAPI.directStream.removeAllListeners();
+        }
 
         // Setup progress event listeners
         if (window.electronAPI && window.electronAPI.torrent) {
@@ -315,16 +362,38 @@ const DownloadsPage = {
             });
         }
 
-        // Poll for updates every 3 seconds (was 2, slightly increased to reduce load)
+        if (window.electronAPI && window.electronAPI.directStream) {
+            window.electronAPI.directStream.onDownloadProgress((data) => {
+                this.updateDirectStreamProgress(data);
+            });
+        }
+
+        // Poll for updates every 3 seconds
         this.updateInterval = setInterval(async () => {
-            if (window.electronAPI && window.electronAPI.torrent) {
-                this.downloads = await window.electronAPI.torrent.getAll();
-                const activeTab = document.querySelector('.tab-btn.active');
-                if (activeTab) {
-                    this.renderDownloads(activeTab.dataset.tab);
-                }
-            }
+            await this.loadDownloads();
         }, 3000);
+    },
+
+    updateDirectStreamProgress(data) {
+        if (!data) return;
+        const card = document.querySelector(`[data-stream-id="${data.id}"]`);
+        if (!card) return;
+
+        const progressBar = card.querySelector('.progress-bar');
+        const stats = card.querySelector('.download-card-stats');
+
+        if (progressBar) {
+            progressBar.style.width = `${data.progress}%`;
+        }
+
+        if (stats) {
+            const speed = this.formatSpeed(data.speed || 0);
+            stats.innerHTML = `
+                <span>${data.progress}%</span>
+                ${data.status === 'downloading' ? `<span class="download-speed">${speed}</span>` : ''}
+                <span style="color:#60a5fa;">Direct Stream</span>
+            `;
+        }
     },
 
     updateDownloadProgress(data) {
