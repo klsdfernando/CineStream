@@ -1,50 +1,18 @@
-name: Build/Release CineStream
+# Deprecated — this workflow targeted the old `app/` directory.
+# Active release pipeline: .github/workflows/build-release.yml
+name: Build/Release CineStream (legacy)
 
 on:
-  push:
-    tags:
-      - 'v*' # Trigger on version tags like v1.4.1
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type RUN to execute the legacy app/ pipeline'
+        required: true
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-
+  skipped:
+    if: github.event.inputs.confirm == 'RUN'
+    runs-on: ubuntu-latest
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: app/package-lock.json
-
-      - name: Install dependencies
-        shell: bash
-        run: |
-          cd app
-          npm install
-
-      - name: Build/Release Electron app
-        shell: bash
-        run: |
-          cd app
-          # --win --mac --linux will build for all platforms
-          # --publish always will create the GitHub Release assets
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            ./node_modules/.bin/electron-builder --win --publish always
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            # We disable code signing (CSC_IDENTITY_AUTO_DISCOVERY=false) 
-            # so the build doesn't fail due to missing certificates
-            CSC_IDENTITY_AUTO_DISCOVERY=false ./node_modules/.bin/electron-builder --mac --publish always
-          else
-            ./node_modules/.bin/electron-builder --linux --publish always
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Notice
+        run: echo "Legacy workflow — prefer build-release.yml for app-v2"

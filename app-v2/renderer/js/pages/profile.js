@@ -182,7 +182,7 @@ const ProfilePage = {
                 <div class="continue-watching-grid">
                     ${this.continueWatching.map(item => {
                         const pct = item.duration ? Math.min(100, Math.round((item.lastPosition / item.duration) * 100)) : 0;
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="continue-card" onclick="router.navigate('watch', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <div class="continue-poster-wrap">
@@ -210,7 +210,7 @@ const ProfilePage = {
             return `
                 <div class="profile-media-grid">
                     ${this.favorites.map(item => {
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="profile-media-card" onclick="router.navigate('details', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <img src="${poster}" alt="${item.title}">
@@ -232,7 +232,7 @@ const ProfilePage = {
             return `
                 <div class="profile-media-grid">
                     ${this.likes.map(item => {
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="profile-media-card" onclick="router.navigate('details', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <img src="${poster}" alt="${item.title}">

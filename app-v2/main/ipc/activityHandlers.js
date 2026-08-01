@@ -12,6 +12,7 @@
 const { ipcMain } = require('electron');
 const { supabase } = require('../services/supabase');
 const { getActor } = require('../services/identity');
+const { enrichItemsWithPosters, normalizePosterPath } = require('../services/posterEnrichment');
 
 const AUTH_REQUIRED = { error: 'Sign in to use this', requiresAuth: true };
 
@@ -46,7 +47,7 @@ function mapHistoryRow(row, actionType = 'watched') {
         mediaId: row.media_id,
         mediaType: row.media_type,
         title: row.title,
-        posterPath: row.poster_path,
+        posterPath: normalizePosterPath(row.poster_path),
         actionType,
         season: row.season,
         episode: row.episode,
@@ -67,10 +68,20 @@ function mapSimpleRow(row, actionType) {
         mediaId: row.media_id,
         mediaType: row.media_type,
         title: row.title,
-        posterPath: row.poster_path,
+        posterPath: normalizePosterPath(row.poster_path),
         actionType,
         createdAt: row.created_at || row.added_at
     };
+}
+
+/** Persist a freshly resolved poster so the next load skips TMDB. */
+async function backfillPoster(table, item, posterPath) {
+    if (!item?.id || !posterPath) return;
+    await supabase.from(table).update({ poster_path: posterPath }).eq('id', item.id);
+}
+
+async function withPosters(items, table) {
+    return enrichItemsWithPosters(items, (item, posterPath) => backfillPoster(table, item, posterPath));
 }
 
 /**
@@ -85,6 +96,7 @@ async function saveWatchProgress(actor, payload, addWatchSeconds = 0) {
     const position = toInt(payload.lastPosition);
     const duration = toInt(payload.duration);
     const extraSeconds = toInt(addWatchSeconds);
+    const posterPath = normalizePosterPath(payload.posterPath);
 
     if (actor.isGuest) {
         const { error } = await supabase.rpc('guest_record_watch', {
@@ -92,7 +104,7 @@ async function saveWatchProgress(actor, payload, addWatchSeconds = 0) {
             p_media_id: mediaId,
             p_media_type: mediaType,
             p_title: payload.title || 'Unknown Title',
-            p_poster_path: payload.posterPath || null,
+            p_poster_path: posterPath,
             p_season: season,
             p_episode: episode,
             p_position: position,
@@ -119,7 +131,7 @@ async function saveWatchProgress(actor, payload, addWatchSeconds = 0) {
             .from('watch_history')
             .update({
                 title: payload.title || 'Unknown Title',
-                poster_path: payload.posterPath || existing.poster_path || null,
+                poster_path: posterPath || existing.poster_path || null,
                 position_seconds: position || existing.position_seconds || 0,
                 duration_seconds: Math.max(duration, existing.duration_seconds || 0),
                 watch_seconds: (existing.watch_seconds || 0) + extraSeconds,
@@ -136,7 +148,7 @@ async function saveWatchProgress(actor, payload, addWatchSeconds = 0) {
         media_id: mediaId,
         media_type: mediaType,
         title: payload.title || 'Unknown Title',
-        poster_path: payload.posterPath || null,
+        poster_path: posterPath,
         season,
         episode,
         position_seconds: position,
@@ -175,7 +187,7 @@ async function toggleReaction(userId, payload, reaction) {
         media_id: mediaId,
         media_type: mediaType,
         title: payload.title || 'Unknown Title',
-        poster_path: payload.posterPath || null,
+        poster_path: normalizePosterPath(payload.posterPath),
         reaction
     });
     if (error) throw new Error(error.message);
@@ -204,7 +216,7 @@ async function toggleFavorite(userId, payload) {
         media_id: mediaId,
         media_type: mediaType,
         title: payload.title || 'Unknown Title',
-        poster_path: payload.posterPath || null
+        poster_path: normalizePosterPath(payload.posterPath)
     });
     if (error) throw new Error(error.message);
     return 'added';
@@ -318,9 +330,10 @@ function registerActivityHandlers() {
                     p_limit: 20
                 });
                 if (error) throw new Error(error.message);
+                // guest rows can only be written via RPC; enrich for display only
                 return {
                     success: true,
-                    continueWatching: (data || []).map(r => mapHistoryRow(r))
+                    continueWatching: await enrichItemsWithPosters((data || []).map(r => mapHistoryRow(r)))
                 };
             }
 
@@ -334,7 +347,10 @@ function registerActivityHandlers() {
                 .limit(20);
             if (error) throw new Error(error.message);
 
-            return { success: true, continueWatching: (data || []).map(r => mapHistoryRow(r)) };
+            return {
+                success: true,
+                continueWatching: await withPosters((data || []).map(r => mapHistoryRow(r)), 'watch_history')
+            };
         } catch (error) {
             console.error('[Activity] getContinueWatching failed:', error.message);
             return { success: false, continueWatching: [] };
@@ -355,7 +371,7 @@ function registerActivityHandlers() {
                         p_device_id: actor.deviceId,
                         p_limit: 200
                     });
-                    return (data || []).map(r => mapHistoryRow(r));
+                    return enrichItemsWithPosters((data || []).map(r => mapHistoryRow(r)));
                 }
                 const { data } = await supabase
                     .from('watch_history')
@@ -363,7 +379,7 @@ function registerActivityHandlers() {
                     .eq('user_id', actor.userId)
                     .order('last_watched_at', { ascending: false })
                     .limit(200);
-                return (data || []).map(r => mapHistoryRow(r));
+                return withPosters((data || []).map(r => mapHistoryRow(r)), 'watch_history');
             };
 
             const fetchReactions = async (reaction) => {
@@ -374,7 +390,7 @@ function registerActivityHandlers() {
                     .eq('user_id', actor.userId)
                     .eq('reaction', reaction)
                     .order('created_at', { ascending: false });
-                return (data || []).map(r => mapSimpleRow(r, reaction));
+                return withPosters((data || []).map(r => mapSimpleRow(r, reaction)), 'reactions');
             };
 
             const fetchFavorites = async () => {
@@ -384,7 +400,7 @@ function registerActivityHandlers() {
                     .select('*')
                     .eq('user_id', actor.userId)
                     .order('added_at', { ascending: false });
-                return (data || []).map(r => mapSimpleRow(r, 'favorite'));
+                return withPosters((data || []).map(r => mapSimpleRow(r, 'favorite')), 'favorites');
             };
 
             if (actionType === 'watched') return { success: true, history: await fetchWatched() };

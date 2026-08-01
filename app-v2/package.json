@@ -1,6 +1,6 @@
 {
     "name": "cinestream",
-    "version": "2.1.1-beta.1",
+    "version": "2.4.3-beta",
     "description": "Cross-platform Movie Streaming Application",
     "author": {
         "name": "Sushan Fernando",
@@ -45,16 +45,25 @@
         ],
         "directories": {
             "output": "dist",
-            "buildResources": "build"
+            "buildResources": "build-resources"
         },
-        "icon": "build/icon.png",
+        "files": [
+            "**/*",
+            "!dist/**",
+            "!**/.env",
+            "!**/.env.*",
+            "!**/local-*.json",
+            "!**/*.md"
+        ],
+        "icon": "build-resources/icon.png",
         "linux": {
             "target": [
                 "AppImage",
                 "deb"
             ],
             "category": "Video",
-            "icon": "build/icon.png"
+            "icon": "build-resources/icon.png",
+            "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
         },
         "mac": {
             "target": [
@@ -62,14 +71,25 @@
                 "zip"
             ],
             "category": "public.app-category.video",
-            "icon": "build/icon.png"
+            "icon": "build-resources/icon.png",
+            "hardenedRuntime": false,
+            "gatekeeperAssess": false,
+            "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
         },
         "win": {
             "target": [
                 "nsis",
                 "portable"
             ],
-            "icon": "build/icon.png"
+            "icon": "build-resources/icon.ico",
+            "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "CineStream"
         }
     },
     "allowScripts": {

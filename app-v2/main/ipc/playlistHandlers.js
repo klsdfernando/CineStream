@@ -10,6 +10,7 @@
 const { ipcMain } = require('electron');
 const { supabase } = require('../services/supabase');
 const { getCurrentUser } = require('../services/identity');
+const { enrichItemsWithPosters, normalizePosterPath } = require('../services/posterEnrichment');
 
 const AUTH_REQUIRED = { error: 'Sign in to use playlists', requiresAuth: true };
 
@@ -19,7 +20,7 @@ function mapItem(row) {
         mediaId: row.media_id,
         mediaType: row.media_type,
         title: row.title,
-        posterPath: row.poster_path,
+        posterPath: normalizePosterPath(row.poster_path),
         addedAt: row.added_at
     };
 }
@@ -95,7 +96,16 @@ function registerPlaylistHandlers() {
                 .eq('playlist_id', playlistId)
                 .order('added_at', { ascending: false });
 
-            playlist.items = (items || []).map(mapItem);
+            playlist.items = await enrichItemsWithPosters(
+                (items || []).map(mapItem),
+                async (item, posterPath) => {
+                    if (!item.id) return;
+                    await supabase
+                        .from('playlist_items')
+                        .update({ poster_path: posterPath })
+                        .eq('id', item.id);
+                }
+            );
             playlist.item_count = playlist.items.length;
             return { success: true, playlist };
         } catch (error) {
@@ -118,7 +128,7 @@ function registerPlaylistHandlers() {
                     media_id: String(mediaId),
                     media_type: mediaType === 'tv' ? 'tv' : 'movie',
                     title: title || 'Unknown Title',
-                    poster_path: posterPath || null
+                    poster_path: normalizePosterPath(posterPath)
                 }, { onConflict: 'playlist_id,media_id,media_type' })
                 .select()
                 .single();

@@ -37,6 +37,9 @@
 }
 
 .library-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 12px 22px;
     background: transparent;
     border: none;
@@ -84,15 +87,25 @@
 }
 
 .playlist-card-icon {
-    font-size: 32px;
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
-    background: rgba(74, 222, 128, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 54px;
+    height: 54px;
+    color: var(--accent-green);
+    background: rgba(74, 222, 128, 0.08);
+    border-radius: 12px;
     flex-shrink: 0;
+}
+
+.playlist-card-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.library-tab-btn svg {
+    flex-shrink: 0;
+    opacity: 0.85;
 }
 
 .playlist-card-name {
@@ -193,8 +206,16 @@
 }
 
 .empty-library-state .empty-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 16px;
+    color: var(--accent-green);
+    background: rgba(74, 222, 128, 0.08);
+    border: 1px solid rgba(74, 222, 128, 0.18);
 }
 
 .empty-library-state h3 {

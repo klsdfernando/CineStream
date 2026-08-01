@@ -411,7 +411,7 @@ const DetailsPage = {
           mediaId: this.mediaId,
           mediaType: this.mediaType,
           title: this.mediaData.title || this.mediaData.name,
-          posterPath: this.mediaData.poster_path
+          posterPath: this.mediaData.posterPath || this.mediaData.poster_path || this.mediaData.poster
         });
       }
     };

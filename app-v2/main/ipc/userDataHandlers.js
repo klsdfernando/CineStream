@@ -9,6 +9,7 @@
 const { ipcMain } = require('electron');
 const { supabase } = require('../services/supabase');
 const { getCurrentUser } = require('../services/identity');
+const { enrichItemsWithPosters, normalizePosterPath } = require('../services/posterEnrichment');
 
 const AUTH_REQUIRED = { error: 'Sign in to use this', requiresAuth: true };
 const DEFAULT_PREFS = { preferredServer: 'vidnest' };
@@ -19,7 +20,7 @@ function mapFavorite(row) {
         mediaId: row.media_id,
         mediaType: row.media_type,
         title: row.title,
-        posterPath: row.poster_path,
+        posterPath: normalizePosterPath(row.poster_path),
         addedAt: row.added_at
     };
 }
@@ -39,7 +40,18 @@ function registerUserDataHandlers() {
                 .order('added_at', { ascending: false });
 
             if (error) return { success: false, favorites: [] };
-            return { success: true, favorites: (data || []).map(mapFavorite) };
+
+            const favorites = await enrichItemsWithPosters(
+                (data || []).map(mapFavorite),
+                async (item, posterPath) => {
+                    if (!item.id) return;
+                    await supabase
+                        .from('favorites')
+                        .update({ poster_path: posterPath })
+                        .eq('id', item.id);
+                }
+            );
+            return { success: true, favorites };
         } catch (error) {
             console.error('[UserData] favorites:list failed:', error.message);
             return { success: false, favorites: [] };
@@ -74,7 +86,7 @@ function registerUserDataHandlers() {
                 media_id: cleanId,
                 media_type: type,
                 title: title || 'Unknown Title',
-                poster_path: posterPath || null
+                poster_path: normalizePosterPath(posterPath)
             });
 
             if (error) return { error: error.message };

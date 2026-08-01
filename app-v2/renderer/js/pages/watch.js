@@ -1246,7 +1246,7 @@ const WatchPage = {
     async handleActionClick(actionType) {
         try {
             const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-            const posterPath = this.mediaData?.poster_path;
+            const posterPath = this.mediaData?.posterPath || this.mediaData?.poster_path || this.mediaData?.poster;
 
             const res = await api.activity.record({
                 mediaId: this.mediaId,
@@ -1278,7 +1278,7 @@ const WatchPage = {
 
     async handleSaveToPlaylistClick() {
         const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-        const posterPath = this.mediaData?.poster_path;
+        const posterPath = this.mediaData?.posterPath || this.mediaData?.poster_path || this.mediaData?.poster;
         if (window.PlaylistModal) {
             PlaylistModal.open({
                 mediaId: this.mediaId,
@@ -1292,7 +1292,7 @@ const WatchPage = {
     async saveMovieToPlaylist(playlistId) {
         try {
             const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-            const posterPath = this.mediaData?.poster_path;
+            const posterPath = this.mediaData?.posterPath || this.mediaData?.poster_path || this.mediaData?.poster;
 
             const res = await api.playlists.addItem(playlistId, {
                 mediaId: this.mediaId,
@@ -1386,7 +1386,7 @@ const WatchPage = {
 
             // Record "watched" activity
             const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-            const posterPath = this.mediaData?.poster_path;
+            const posterPath = this.mediaData?.posterPath || this.mediaData?.poster_path || this.mediaData?.poster;
             const serverObj = this.servers.find(s => s.id === this.currentPlayer) || this.servers[0];
 
             api.activity.record({
@@ -1909,7 +1909,7 @@ const WatchPage = {
     async syncTelemetry() {
         if (!this.mediaId) return;
         const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-        const posterPath = this.mediaData?.poster_path;
+        const posterPath = this.mediaData?.posterPath || this.mediaData?.poster_path || this.mediaData?.poster;
         const serverObj = this.servers.find(s => s.id === this.currentPlayer) || this.servers[0];
 
         try {

@@ -95,7 +95,7 @@ const PlaylistModal = {
             bodyEl.innerHTML = playlists.map(pl => `
                 <div class="playlist-modal-item">
                     <div class="playlist-modal-item-info">
-                        <span class="playlist-item-name">📁 ${pl.name}</span>
+                        <span class="playlist-item-name">${pl.name}</span>
                         <span class="playlist-item-count">${pl.item_count || 0} items</span>
                     </div>
                     <button type="button" class="btn-add-to-pl" data-playlist-id="${pl.id}">+ Add</button>

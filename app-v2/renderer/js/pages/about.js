@@ -4,7 +4,7 @@
 
 const AboutPage = {
     appName: 'CineStream',
-    version: '1.4.1',
+    version: '2.4.3-beta',
     author: 'Sushan Fernando',
     buildDate: 'February 2026',
 

@@ -4,7 +4,7 @@
  */
 
 const VersionCheck = {
-    currentVersion: '1.4.1',
+    currentVersion: '2.4.3-beta',
 
     async check() {
         try {

@@ -73,6 +73,17 @@ const api = {
         updateProfile: (data) => window.electronAPI.auth.updateProfile(data),
     },
 
+    /**
+     * Build a TMDB poster URL from a relative path ("/abc.jpg") or pass
+     * through an absolute URL. Returns a local placeholder when missing.
+     */
+    posterUrl(path, size = 'w342') {
+        if (!path) return 'assets/images/no-poster.png';
+        if (/^https?:\/\//i.test(path)) return path;
+        const cleaned = path.startsWith('/') ? path : `/${path}`;
+        return `https://image.tmdb.org/t/p/${size}${cleaned}`;
+    },
+
     // ─── User Activity endpoints (via Supabase) ───
     activity: {
         record: (data) => window.electronAPI.activity.record(data),

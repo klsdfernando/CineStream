@@ -68,16 +68,20 @@ const LibraryPage = {
                 <!-- Library Tabs Navigation -->
                 <div class="library-tabs" role="tablist">
                     <button class="library-tab-btn ${this.activeTab === 'playlists' ? 'active' : ''}" data-tab="playlists">
-                        📁 Playlists (${this.playlists.length})
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Playlists (${this.playlists.length})
                     </button>
                     <button class="library-tab-btn ${this.activeTab === 'favorites' ? 'active' : ''}" data-tab="favorites">
-                        ❤️ Favorites (${this.favorites.length})
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        Favorites (${this.favorites.length})
                     </button>
                     <button class="library-tab-btn ${this.activeTab === 'watchlist' ? 'active' : ''}" data-tab="watchlist">
-                        🔖 Watchlist & Progress (${this.watchlist.length})
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Watchlist & Progress (${this.watchlist.length})
                     </button>
                     <button class="library-tab-btn ${this.activeTab === 'likes' ? 'active' : ''}" data-tab="likes">
-                        👍 Liked Titles (${this.likes.length})
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                        Liked Titles (${this.likes.length})
                     </button>
                 </div>
 
@@ -98,7 +102,9 @@ const LibraryPage = {
             if (this.playlists.length === 0) {
                 return `
                     <div class="empty-library-state">
-                        <div class="empty-icon">📁</div>
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        </div>
                         <h3>No Playlists Created Yet</h3>
                         <p>Create your custom movie collections or add items from any movie page!</p>
                     </div>
@@ -109,7 +115,9 @@ const LibraryPage = {
                 <div class="playlists-grid">
                     ${this.playlists.map(pl => `
                         <div class="playlist-card" onclick="LibraryPage.openPlaylist('${pl.id}')">
-                            <div class="playlist-card-icon">📁</div>
+                            <div class="playlist-card-icon">
+                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                            </div>
                             <div class="playlist-card-content">
                                 <h3 class="playlist-card-name">${pl.name}</h3>
                                 <p class="playlist-card-desc">${pl.description || 'Custom playlist'}</p>
@@ -129,7 +137,7 @@ const LibraryPage = {
             return `
                 <div class="library-media-grid">
                     ${this.favorites.map(item => {
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="library-media-card" onclick="router.navigate('details', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <img src="${poster}" alt="${item.title}">
@@ -153,7 +161,7 @@ const LibraryPage = {
                 <div class="library-media-grid">
                     ${this.watchlist.map(item => {
                         const pct = item.duration ? Math.min(100, Math.round((item.lastPosition / item.duration) * 100)) : 0;
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="library-media-card" onclick="router.navigate('watch', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <div class="library-poster-wrap">
@@ -179,7 +187,7 @@ const LibraryPage = {
             return `
                 <div class="library-media-grid">
                     ${this.likes.map(item => {
-                        const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                        const poster = api.posterUrl(item.posterPath);
                         return `
                             <div class="library-media-card" onclick="router.navigate('details', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                 <img src="${poster}" alt="${item.title}">
@@ -207,7 +215,7 @@ const LibraryPage = {
                     ← Back to Playlists
                 </button>
                 <div class="playlist-detail-header">
-                    <h2>📁 ${pl.name}</h2>
+                    <h2>${pl.name}</h2>
                     <p>${pl.description || 'Custom playlist'}</p>
                     <span class="playlist-count-badge">${items.length} items</span>
                 </div>
@@ -217,7 +225,7 @@ const LibraryPage = {
                 ` : `
                     <div class="library-media-grid">
                         ${items.map(item => {
-                            const poster = item.posterPath ? `https://image.tmdb.org/t/p/w342${item.posterPath}` : 'assets/images/no-poster.png';
+                            const poster = api.posterUrl(item.posterPath);
                             return `
                                 <div class="library-media-card" onclick="router.navigate('watch', { id: '${item.mediaId}', mediaType: '${item.mediaType}' })">
                                     <img src="${poster}" alt="${item.title}">

@@ -138,9 +138,9 @@ const ActivityPage = {
             let actionBadge;
             if (type === 'liked') {
                 const liked = item.actionType === 'like';
-                actionBadge = `<span style="${badgeStyle} font-weight: bold; color: ${liked ? '#22c55e' : '#ef4444'}">${liked ? '👍 Liked' : '👎 Disliked'}</span>`;
+                actionBadge = `<span style="${badgeStyle} font-weight: bold; color: ${liked ? '#22c55e' : '#ef4444'}">${liked ? 'Liked' : 'Disliked'}</span>`;
             } else if (type === 'favorites') {
-                actionBadge = `<span style="${badgeStyle} color:#f59e0b;">★ ${date}</span>`;
+                actionBadge = `<span style="${badgeStyle} color:#f59e0b;">${date}</span>`;
             } else {
                 const episodeTag = item.mediaType === 'tv' && item.season
                     ? ` · S${item.season}E${item.episode}`
@@ -154,11 +154,14 @@ const ActivityPage = {
                    </div>`
                 : '';
 
+            const poster = api.posterUrl(item.posterPath);
+            const hasPoster = !!item.posterPath;
+
             gridHtml += `
                 <div class="movie-card" onclick="router.navigate('details', { id: '${item.mediaId}', type: '${item.mediaType}' })" style="position: relative;">
                     <div class="movie-poster">
-                        ${item.posterPath
-                    ? `<img src="https://image.tmdb.org/t/p/w342${item.posterPath}" alt="${item.title}" loading="lazy">`
+                        ${hasPoster
+                    ? `<img src="${poster}" alt="${item.title}" loading="lazy">`
                     : `<div class="movie-poster-placeholder">No Image</div>`}
                         ${actionBadge}
                         ${progress}
@@ -278,18 +281,20 @@ const ActivityPage = {
             } else {
                 html += '<div class="activity-grid">';
                 playlist.items.forEach(item => {
+                    const poster = api.posterUrl(item.posterPath);
+                    const hasPoster = !!item.posterPath;
                     html += `
                         <div class="movie-card" style="position: relative;">
-                            <div class="movie-poster" onclick="router.navigate('details', { id: '${item.media_id}', type: '${item.media_type}' })" style="cursor:pointer;">
-                                ${item.poster_path
-                            ? `<img src="https://image.tmdb.org/t/p/w342${item.poster_path}" alt="${item.title}" loading="lazy">`
+                            <div class="movie-poster" onclick="router.navigate('details', { id: '${item.mediaId}', type: '${item.mediaType}' })" style="cursor:pointer;">
+                                ${hasPoster
+                            ? `<img src="${poster}" alt="${item.title}" loading="lazy">`
                             : `<div class="movie-poster-placeholder">No Image</div>`}
                             </div>
                             <div class="movie-info">
                                 <h3 class="movie-title">${item.title}</h3>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                                    <span class="movie-type" style="text-transform: uppercase; font-size: 12px; color: var(--text-secondary);">${item.media_type}</span>
-                                    <button class="btn btn-sm" style="background:transparent; border:none; color:#ef4444; cursor:pointer;" onclick="ActivityPage.removeFromPlaylist(${playlist.id}, '${item.media_id}')" title="Remove from playlist">
+                                    <span class="movie-type" style="text-transform: uppercase; font-size: 12px; color: var(--text-secondary);">${item.mediaType}</span>
+                                    <button class="btn btn-sm" style="background:transparent; border:none; color:#ef4444; cursor:pointer;" onclick="ActivityPage.removeFromPlaylist(${playlist.id}, '${item.mediaId}')" title="Remove from playlist">
                                         Remove
                                     </button>
                                 </div>
