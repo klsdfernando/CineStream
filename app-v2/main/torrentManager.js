@@ -166,14 +166,49 @@ class TorrentManager {
             this.downloadPath = newPath;
             return true;
         });
+
+        // Select download path via native folder dialog
+        ipcMain.handle('torrent:selectPath', async () => {
+            const { dialog } = require('electron');
+            if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+                return { canceled: true, path: this.downloadPath };
+            }
+            const result = await dialog.showOpenDialog(this.mainWindow, {
+                properties: ['openDirectory', 'createDirectory'],
+                title: 'Select Download Location',
+                defaultPath: this.downloadPath
+            });
+            if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+                this.downloadPath = result.filePaths[0];
+                return { canceled: false, path: this.downloadPath };
+            }
+            return { canceled: true, path: this.downloadPath };
+        });
     }
 
     /**
      * Find torrent by infoHash in the client
      */
+    /**
+     * Find torrent by infoHash in the client
+     */
     findTorrent(infoHash) {
-        if (!this.client || !this.client.torrents) return null;
-        return this.client.torrents.find(t => t.infoHash === infoHash);
+        if (!this.client || !this.client.torrents || !infoHash) return null;
+        const target = String(infoHash).toLowerCase();
+        return this.client.torrents.find(t => (t.infoHash && t.infoHash.toLowerCase() === target));
+    }
+
+    /**
+     * Helper to get download item from map case-insensitively
+     */
+    getDownloadItem(infoHash) {
+        if (!infoHash) return null;
+        const target = String(infoHash).toLowerCase();
+        if (this.downloads.has(target)) return this.downloads.get(target);
+        for (const [k, v] of this.downloads.entries()) {
+            if (String(k).toLowerCase() === target) return v;
+        }
+        return null;
     }
 
     /**
@@ -191,9 +226,9 @@ class TorrentManager {
         console.log('[TorrentManager] Starting download:', movieInfo.title || 'Unknown');
         console.log('[TorrentManager] Magnet:', magnetLink.substring(0, 60) + '...');
 
-        // Extract infoHash from magnet link
+        // Extract infoHash from magnet link (normalized to lowercase)
         const hashMatch = magnetLink.match(/btih:([a-fA-F0-9]{40})/i);
-        const magnetHash = hashMatch ? hashMatch[1].toUpperCase() : null;
+        const magnetHash = hashMatch ? hashMatch[1].toLowerCase() : null;
 
         const defaultAnnounce = [
             'udp://tracker.opentrackr.org:1337/announce',
@@ -216,17 +251,17 @@ class TorrentManager {
         }
 
         if (existingTorrent) {
-            console.log('[TorrentManager] Torrent already exists:', existingTorrent.infoHash);
+            const hashKey = existingTorrent.infoHash.toLowerCase();
+            console.log('[TorrentManager] Torrent already exists:', hashKey);
 
-            // Update downloads map if not there
-            if (!this.downloads.has(existingTorrent.infoHash)) {
+            if (!this.getDownloadItem(hashKey)) {
                 this.addToDownloadsMap(existingTorrent, movieInfo);
                 this.attachTorrentEvents(existingTorrent);
             }
 
             return {
                 success: true,
-                infoHash: existingTorrent.infoHash,
+                infoHash: hashKey,
                 name: movieInfo.title || existingTorrent.name || 'Downloading',
                 message: 'Already downloading'
             };
@@ -242,17 +277,17 @@ class TorrentManager {
 
                 // Wait for infoHash to be available
                 const onInfoHash = () => {
-                    const infoHash = torrent.infoHash || magnetHash;
+                    const infoHash = (torrent.infoHash || magnetHash || '').toLowerCase();
                     console.log('[TorrentManager] Torrent infoHash ready:', infoHash);
 
                     if (infoHash) {
-                        // Store download info
+                        // Store download info with lowercase key
                         this.downloads.set(infoHash, {
                             infoHash,
                             magnetLink,
                             name: torrent.name || movieInfo.title || 'Connecting...',
                             movieInfo,
-                            torrentType: movieInfo.torrentType || 'episode', // 'season-pack' or 'episode'
+                            torrentType: movieInfo.torrentType || 'episode',
                             status: 'downloading',
                             progress: Math.round((torrent.progress || 0) * 100),
                             downloadSpeed: torrent.downloadSpeed || 0,
@@ -277,7 +312,6 @@ class TorrentManager {
                     });
                 };
 
-                // Check if infoHash is already available
                 if (torrent.infoHash || magnetHash) {
                     onInfoHash();
                 } else {
@@ -287,9 +321,9 @@ class TorrentManager {
                 // Handle error on add
                 torrent.once('error', (err) => {
                     console.error('[TorrentManager] Torrent add error:', err.message);
-                    if (magnetHash && !this.downloads.has(magnetHash)) {
-                        this.downloads.set(magnetHash, {
-                            infoHash: magnetHash,
+                    if (magnetHash && !this.getDownloadItem(magnetHash)) {
+                        this.downloads.set(magnetHash.toLowerCase(), {
+                            infoHash: magnetHash.toLowerCase(),
                             magnetLink,
                             name: movieInfo.title || 'Downloading...',
                             movieInfo,
@@ -305,7 +339,7 @@ class TorrentManager {
                             startedAt: Date.now(),
                             files: []
                         });
-                        resolve({ success: true, infoHash: magnetHash, name: movieInfo.title || 'Starting...' });
+                        resolve({ success: true, infoHash: magnetHash.toLowerCase(), name: movieInfo.title || 'Starting...' });
                     } else {
                         reject(err);
                     }
@@ -314,7 +348,7 @@ class TorrentManager {
             } catch (error) {
                 console.error('[TorrentManager] Add torrent error:', error);
                 if (magnetHash) {
-                    resolve({ success: true, infoHash: magnetHash, name: movieInfo.title || 'Starting...' });
+                    resolve({ success: true, infoHash: magnetHash.toLowerCase(), name: movieInfo.title || 'Starting...' });
                 } else {
                     reject(error);
                 }
@@ -326,8 +360,11 @@ class TorrentManager {
      * Add torrent info to downloads map
      */
     addToDownloadsMap(torrent, movieInfo = {}) {
-        this.downloads.set(torrent.infoHash, {
-            infoHash: torrent.infoHash,
+        const infoHash = (torrent.infoHash || '').toLowerCase();
+        if (!infoHash) return;
+
+        this.downloads.set(infoHash, {
+            infoHash,
             magnetLink: torrent.magnetURI,
             name: torrent.name || movieInfo.title || 'Unknown',
             movieInfo,
@@ -352,16 +389,16 @@ class TorrentManager {
      * Attach event listeners to a torrent
      */
     attachTorrentEvents(torrent) {
-        const infoHash = torrent.infoHash;
+        const infoHash = (torrent.infoHash || '').toLowerCase();
 
         torrent.on('metadata', () => {
             console.log('[TorrentManager] Metadata received:', torrent.name);
-            const download = this.downloads.get(infoHash);
+            const download = this.getDownloadItem(infoHash);
             if (download) {
                 download.name = torrent.name;
                 download.size = torrent.length;
                 download.status = 'downloading';
-                download.files = torrent.files.map(f => ({
+                download.files = (torrent.files || []).map(f => ({
                     name: f.name,
                     size: f.length,
                     path: f.path
@@ -375,20 +412,19 @@ class TorrentManager {
 
         torrent.on('done', () => {
             console.log('[TorrentManager] Download complete:', torrent.name);
-            const download = this.downloads.get(infoHash);
+            const download = this.getDownloadItem(infoHash);
             if (download) {
                 download.status = 'completed';
                 download.progress = 100;
                 download.completedAt = Date.now();
             }
-            // Save to persistent storage
             this.saveDownloadsHistory();
             this.sendToRenderer('torrent:completed', { infoHash });
         });
 
         torrent.on('error', (err) => {
             console.error('[TorrentManager] Torrent error:', err.message);
-            const download = this.downloads.get(infoHash);
+            const download = this.getDownloadItem(infoHash);
             if (download) {
                 download.status = 'error';
                 download.error = err.message;
@@ -401,19 +437,29 @@ class TorrentManager {
      * Update download progress and send to renderer
      */
     updateDownloadProgress(infoHash, torrent) {
-        const download = this.downloads.get(infoHash);
+        const download = this.getDownloadItem(infoHash || torrent.infoHash);
         if (!download) return;
 
-        download.progress = Math.round(torrent.progress * 100);
-        download.downloadSpeed = torrent.downloadSpeed;
-        download.uploadSpeed = torrent.uploadSpeed;
-        download.downloaded = torrent.downloaded;
-        download.peers = torrent.numPeers;
-        download.eta = torrent.timeRemaining;
+        if (download.status === 'paused' || torrent.paused) {
+            download.downloadSpeed = 0;
+            download.peers = 0;
+            download.eta = 0;
+            return;
+        }
+
+        download.progress = Math.round((torrent.progress || 0) * 100);
+        download.downloadSpeed = torrent.downloadSpeed || 0;
+        download.uploadSpeed = torrent.uploadSpeed || 0;
+        download.downloaded = torrent.downloaded || 0;
+        download.peers = torrent.numPeers || 0;
+        download.eta = torrent.timeRemaining || 0;
+        if (torrent.name && (download.name === 'Connecting...' || download.name === 'Downloading...')) {
+            download.name = torrent.name;
+        }
 
         // Send update to renderer
         this.sendToRenderer('torrent:progress', {
-            infoHash,
+            infoHash: download.infoHash,
             progress: download.progress,
             downloadSpeed: download.downloadSpeed,
             downloaded: download.downloaded,
@@ -428,17 +474,29 @@ class TorrentManager {
     pauseDownload(infoHash) {
         const torrent = this.findTorrent(infoHash);
         if (torrent) {
-            // WebTorrent pause - stop peers
-            torrent.pause();
-            const download = this.downloads.get(infoHash);
-            if (download) download.status = 'paused';
-            console.log('[TorrentManager] Paused:', infoHash);
-            return { success: true };
+            try { torrent.pause(); } catch (e) {}
+            if (torrent.deselect && torrent.pieces) {
+                try { torrent.deselect(0, torrent.pieces.length - 1, 0); } catch (e) {}
+            }
+            if (torrent.wires) {
+                torrent.wires.forEach(w => { try { w.destroy(); } catch (e) {} });
+            }
         }
-        // If not in client but in our map, just update status
-        const download = this.downloads.get(infoHash);
+        const download = this.getDownloadItem(infoHash);
         if (download) {
             download.status = 'paused';
+            download.downloadSpeed = 0;
+            download.peers = 0;
+            download.eta = 0;
+
+            this.sendToRenderer('torrent:progress', {
+                infoHash: download.infoHash,
+                progress: download.progress,
+                downloadSpeed: 0,
+                downloaded: download.downloaded,
+                peers: 0,
+                eta: 0
+            });
             return { success: true };
         }
         return { success: false, error: 'Torrent not found' };
@@ -450,14 +508,12 @@ class TorrentManager {
     resumeDownload(infoHash) {
         const torrent = this.findTorrent(infoHash);
         if (torrent) {
-            torrent.resume();
-            const download = this.downloads.get(infoHash);
-            if (download) download.status = 'downloading';
-            console.log('[TorrentManager] Resumed:', infoHash);
-            return { success: true };
+            try { torrent.resume(); } catch (e) {}
+            if (torrent.select && torrent.pieces) {
+                try { torrent.select(0, torrent.pieces.length - 1, 1); } catch (e) {}
+            }
         }
-        // If not in client but in our map, just update status
-        const download = this.downloads.get(infoHash);
+        const download = this.getDownloadItem(infoHash);
         if (download) {
             download.status = 'downloading';
             return { success: true };
@@ -471,14 +527,15 @@ class TorrentManager {
     cancelDownload(infoHash, deleteFiles = false) {
         const torrent = this.findTorrent(infoHash);
         if (torrent) {
-            // Use client.remove instead of torrent.destroy
-            this.client.remove(infoHash, { destroyStore: deleteFiles });
-            console.log('[TorrentManager] Removed from client:', infoHash);
+            this.client.remove(torrent.infoHash, { destroyStore: deleteFiles });
         }
 
-        // Always remove from our map
-        this.downloads.delete(infoHash);
-        console.log('[TorrentManager] Removed from downloads map:', infoHash);
+        const target = String(infoHash).toLowerCase();
+        for (const [k, v] of Array.from(this.downloads.entries())) {
+            if (String(k).toLowerCase() === target || v.infoHash.toLowerCase() === target) {
+                this.downloads.delete(k);
+            }
+        }
         return { success: true };
     }
 
@@ -486,19 +543,28 @@ class TorrentManager {
      * Get all downloads
      */
     getAllDownloads() {
-        // Sync with actual client state
         if (this.client && this.client.torrents) {
             for (const torrent of this.client.torrents) {
-                const download = this.downloads.get(torrent.infoHash);
+                const download = this.getDownloadItem(torrent.infoHash);
                 if (download) {
-                    download.progress = Math.round(torrent.progress * 100);
-                    download.downloadSpeed = torrent.downloadSpeed;
-                    download.downloaded = torrent.downloaded;
-                    download.size = torrent.length || download.size;
-                    download.peers = torrent.numPeers;
-                    download.eta = torrent.timeRemaining;
-                    if (torrent.done && download.status !== 'completed') {
-                        download.status = 'completed';
+                    if (download.status === 'paused' || torrent.paused) {
+                        download.status = 'paused';
+                        download.downloadSpeed = 0;
+                        download.peers = 0;
+                        download.eta = 0;
+                    } else {
+                        download.progress = Math.round((torrent.progress || 0) * 100);
+                        download.downloadSpeed = torrent.downloadSpeed || 0;
+                        download.downloaded = torrent.downloaded || 0;
+                        download.size = torrent.length || download.size || 0;
+                        download.peers = torrent.numPeers || 0;
+                        download.eta = torrent.timeRemaining || 0;
+                        if (torrent.name && (download.name === 'Connecting...' || download.name === 'Downloading...')) {
+                            download.name = torrent.name;
+                        }
+                        if (torrent.done && download.status !== 'completed') {
+                            download.status = 'completed';
+                        }
                     }
                 }
             }

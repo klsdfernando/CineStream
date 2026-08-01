@@ -12,10 +12,39 @@ class StreamDownloader {
     constructor() {
         this.activeDownloads = new Map(); // id -> download status
         this.downloadPath = path.join(app.getPath('downloads'), 'MovieApp');
+        this.historyFile = path.join(app.getPath('userData'), 'direct-downloads-history.json');
         this.mainWindow = null;
 
         if (!fs.existsSync(this.downloadPath)) {
             fs.mkdirSync(this.downloadPath, { recursive: true });
+        }
+        this.loadHistory();
+    }
+
+    loadHistory() {
+        try {
+            if (fs.existsSync(this.historyFile)) {
+                const data = fs.readFileSync(this.historyFile, 'utf-8');
+                const history = JSON.parse(data);
+                if (Array.isArray(history)) {
+                    for (const item of history) {
+                        if (item.id && item.status === 'completed') {
+                            this.activeDownloads.set(item.id, item);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[StreamDownloader] Failed to load history:', e.message);
+        }
+    }
+
+    saveHistory() {
+        try {
+            const completed = Array.from(this.activeDownloads.values()).filter(d => d.status === 'completed');
+            fs.writeFileSync(this.historyFile, JSON.stringify(completed, null, 2));
+        } catch (e) {
+            console.error('[StreamDownloader] Failed to save history:', e.message);
         }
     }
 
@@ -263,6 +292,9 @@ class StreamDownloader {
     }
 
     notifyProgress(item) {
+        if (item && item.status === 'completed') {
+            this.saveHistory();
+        }
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
             this.mainWindow.webContents.send('stream:download-progress', item);
         }

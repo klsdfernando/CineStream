@@ -10,15 +10,16 @@ const ReportPage = {
 
         container.innerHTML = `
             <div class="report-page fade-in">
-                <div class="report-header">
-                    <h1>
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="report-hero-header">
+                    <div class="report-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
                             <line x1="4" y1="22" x2="4" y2="15"/>
                         </svg>
-                        Report a Problem
-                    </h1>
-                    <p class="report-subtitle">Help us improve by reporting bugs, issues, or suggestions</p>
+                        Support & Feedback
+                    </div>
+                    <h1>Report a <span>Problem</span></h1>
+                    <p class="report-subtitle">Help us improve CineStream by reporting bugs, playback issues, or suggestions</p>
                 </div>
 
                 <form class="report-form" id="report-form">

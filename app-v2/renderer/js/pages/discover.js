@@ -17,27 +17,36 @@ const DiscoverPage = {
         container.innerHTML = `
       <div class="discover-page fade-in">
         <div class="discover-header">
-          <h1 class="discover-title">Discover</h1>
-          <p class="discover-subtitle">Explore movies by genre, year, and more</p>
+          <div class="discover-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="12 8 8 16 16 16 12 8"/>
+            </svg>
+            Explore Catalogue
+          </div>
+          <h1 class="discover-title">Discover <span>Movies</span></h1>
+          <p class="discover-subtitle">Filter by genre, release year, popularity and highest ratings</p>
         </div>
 
-        <div class="discover-filters">
-          <div class="filter-group">
-            <label class="filter-label">Sort By</label>
-            <select class="filter-select" id="filter-sort">
-              <option value="popularity.desc">Most Popular</option>
-              <option value="vote_average.desc">Highest Rated</option>
-              <option value="release_date.desc">Newest First</option>
-              <option value="release_date.asc">Oldest First</option>
-              <option value="revenue.desc">Highest Revenue</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label class="filter-label">Year</label>
-            <select class="filter-select" id="filter-year">
-              <option value="">All Years</option>
-              ${this.generateYearOptions()}
-            </select>
+        <div class="discover-filters-panel">
+          <div class="discover-filters">
+            <div class="filter-group">
+              <label class="filter-label">Sort By</label>
+              <select class="filter-select" id="filter-sort">
+                <option value="popularity.desc">Most Popular</option>
+                <option value="vote_average.desc">Highest Rated</option>
+                <option value="release_date.desc">Newest First</option>
+                <option value="release_date.asc">Oldest First</option>
+                <option value="revenue.desc">Highest Revenue</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Year</label>
+              <select class="filter-select" id="filter-year">
+                <option value="">All Years</option>
+                ${this.generateYearOptions()}
+              </select>
+            </div>
           </div>
         </div>
 

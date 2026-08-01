@@ -127,6 +127,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         getAll: () => ipcRenderer.invoke('torrent:getAll'),
         getPath: () => ipcRenderer.invoke('torrent:getPath'),
         setPath: (newPath) => ipcRenderer.invoke('torrent:setPath', newPath),
+        selectPath: () => ipcRenderer.invoke('torrent:selectPath'),
 
         // Event listeners for progress updates
         onProgress: (callback) => ipcRenderer.on('torrent:progress', (event, data) => callback(data)),

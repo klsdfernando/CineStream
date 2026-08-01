@@ -15,11 +15,13 @@ const AboutPage = {
             <div class="about-page fade-in">
                 <div class="about-header">
                     <div class="about-logo">
-                        <img src="assets/icon.png" width="96" height="96" alt="CineStream Logo" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,255,100,0.2); display: block; margin: 0 auto;">
+                        <img src="assets/icon.png" width="96" height="96" alt="CineStream Logo">
                     </div>
                     <h1>${this.appName}</h1>
-                    <p class="version-badge">Version ${this.version}</p>
-                    <p class="author-badge">by ${this.author}</p>
+                    <div class="about-header-meta">
+                        <span class="version-badge">v${this.version}</span>
+                        <span class="author-badge">by ${this.author}</span>
+                    </div>
                 </div>
 
                 <div class="about-content">

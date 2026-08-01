@@ -4,18 +4,39 @@
 
 const DownloadsPage = {
     downloads: [],
+    currentTab: 'active',
     updateInterval: null,
 
     async render() {
+        this.currentTab = 'active';
         const container = document.getElementById('main-content');
 
         container.innerHTML = `
             <div class="downloads-page fade-in">
-                <div class="downloads-header">
-                    <h1>Downloads</h1>
-                    <div class="downloads-path">
-                        <span class="downloads-path-label">Save to:</span>
-                        <span class="downloads-path-value" id="download-path">~/Downloads/MovieApp</span>
+                <div class="downloads-hero-header">
+                    <div class="downloads-hero-info">
+                        <div class="downloads-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Transfers & Storage
+                        </div>
+                        <h1>Downloads <span>Manager</span></h1>
+                        <p>Track active downloads, stream caches, and manage offline files</p>
+                    </div>
+
+                    <div class="downloads-path-card">
+                        <div class="path-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="path-details">
+                            <span class="path-label">Storage Path</span>
+                            <span class="path-value" id="download-path">~/Downloads/MovieApp</span>
+                        </div>
                         <button class="downloads-path-btn" id="btn-change-path">Change</button>
                     </div>
                 </div>
@@ -43,11 +64,27 @@ const DownloadsPage = {
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
+                this.currentTab = targetTab;
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                this.renderDownloads(e.target.dataset.tab);
+                this.renderDownloads(this.currentTab);
             });
         });
+
+        // Change storage path button
+        const changePathBtn = document.getElementById('btn-change-path');
+        if (changePathBtn) {
+            changePathBtn.addEventListener('click', async () => {
+                if (window.electronAPI && window.electronAPI.torrent && window.electronAPI.torrent.selectPath) {
+                    const res = await window.electronAPI.torrent.selectPath();
+                    if (res && !res.canceled && res.path) {
+                        const pathEl = document.getElementById('download-path');
+                        if (pathEl) pathEl.textContent = res.path;
+                    }
+                }
+            });
+        }
     },
 
     async loadDownloads() {
@@ -80,10 +117,10 @@ const DownloadsPage = {
                 }))
             ];
 
-            this.renderDownloads('active');
+            this.renderDownloads(this.currentTab || 'active');
         } catch (error) {
             console.error('Failed to load downloads:', error);
-            this.renderDownloads('active');
+            this.renderDownloads(this.currentTab || 'active');
         }
     },
 

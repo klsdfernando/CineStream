@@ -67,19 +67,23 @@ const HeroCarousel = {
                 <div class="home-hero-dots" role="tablist" aria-label="Featured slides"></div>
             </div>
             <div class="home-hero-rail">
-                <h3 class="home-hero-rail-title">${this._escape(railTitle)}</h3>
+                <div class="home-hero-rail-header">
+                    <h3 class="home-hero-rail-title">${this._escape(railTitle)}</h3>
+                    <div class="home-hero-rail-actions">
+                        <button type="button" class="home-hero-rail-nav prev" aria-label="Previous">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="home-hero-rail-nav next" aria-label="Next">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
                 <div class="home-hero-rail-track-wrap">
-                    <button type="button" class="home-hero-rail-nav prev" aria-label="Previous">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"/>
-                        </svg>
-                    </button>
                     <div class="home-hero-rail-track"></div>
-                    <button type="button" class="home-hero-rail-nav next" aria-label="Next">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
         `;
