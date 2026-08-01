@@ -5,6 +5,7 @@
 
 const { ipcMain } = require('electron');
 const { supabase } = require('../services/supabase');
+const { getCurrentUser } = require('../services/identity');
 
 function registerReportHandlers() {
     /**
@@ -37,11 +38,25 @@ function registerReportHandlers() {
                 }
             }
 
-            // Insert into reports table
-            const { data, error } = await supabase.from('reports').insert({
+            // Tag the report with its author so they can read it back later.
+            // Anonymous reports can be written but not selected, so only ask
+            // for the inserted row when we know RLS will return it.
+            const user = await getCurrentUser();
+            const row = {
                 name, subject, message,
                 images: JSON.stringify(imageUrls),
-            }).select().single();
+                user_id: user?.id || null
+            };
+
+            if (!user) {
+                const { error } = await supabase.from('reports').insert(row);
+                if (error) throw error;
+
+                console.log(`[Reports] New anonymous report submitted: ${subject}`);
+                return { success: true, message: 'Report submitted successfully' };
+            }
+
+            const { data, error } = await supabase.from('reports').insert(row).select().single();
 
             if (error) throw error;
 
@@ -59,7 +74,8 @@ function registerReportHandlers() {
     });
 
     /**
-     * Get all reports (for admin use)
+     * Reports filed by the signed-in user. RLS scopes this to the author,
+     * so cross-user admin listing must go through the Supabase dashboard.
      */
     ipcMain.handle('report:getAll', async () => {
         try {

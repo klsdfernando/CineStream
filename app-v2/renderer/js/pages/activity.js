@@ -25,6 +25,7 @@ const ActivityPage = {
                 <div class="activity-tabs">
                     <button class="activity-tab active" data-tab="watched">Watch History</button>
                     <button class="activity-tab" data-tab="liked">Liked / Disliked</button>
+                    <button class="activity-tab" data-tab="favorites">Favorites</button>
                     <button class="activity-tab" data-tab="playlists">My Playlists</button>
                 </div>
 
@@ -74,6 +75,8 @@ const ActivityPage = {
                 await this.loadHistory('watched', contentArea);
             } else if (this.currentTab === 'liked') {
                 await this.loadHistory('liked', contentArea);
+            } else if (this.currentTab === 'favorites') {
+                await this.loadHistory('favorites', contentArea);
             } else if (this.currentTab === 'playlists') {
                 await this.loadPlaylists(contentArea);
             }
@@ -94,14 +97,20 @@ const ActivityPage = {
 
         if (type === 'watched') {
             const res = await api.activity.getHistory('watched');
-            items = res.history;
+            items = res.history || [];
             emptyText = "You haven't watched anything yet.";
         } else if (type === 'liked') {
-            const likes = await api.activity.getHistory('like');
-            const dislikes = await api.activity.getHistory('dislike');
-            // Combine and sort by date
-            items = [...likes.history, ...dislikes.history].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const [likes, dislikes] = await Promise.all([
+                api.activity.getHistory('like'),
+                api.activity.getHistory('dislike')
+            ]);
+            items = [...(likes.history || []), ...(dislikes.history || [])]
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             emptyText = "You haven't liked or disliked any media yet.";
+        } else if (type === 'favorites') {
+            const res = await api.activity.getHistory('favorite');
+            items = res.history || [];
+            emptyText = "You haven't added any favorites yet.";
         }
 
         if (items.length === 0) {
@@ -121,23 +130,42 @@ const ActivityPage = {
 
         let gridHtml = '<div class="activity-grid">';
 
+        const badgeStyle = 'position:absolute; top:8px; right:8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+
         items.forEach(item => {
-            const date = new Date(item.created_at).toLocaleDateString();
-            const actionBadge = type === 'liked'
-                ? `<span style="position:absolute; top:8px; right:8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; color: ${item.action_type === 'like' ? '#22c55e' : '#ef4444'}">${item.action_type === 'like' ? '👍 Liked' : '👎 Disliked'}</span>`
-                : `<span style="position:absolute; top:8px; right:8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 12px;">Watched ${date}</span>`;
+            const date = new Date(item.updatedAt || item.createdAt).toLocaleDateString();
+
+            let actionBadge;
+            if (type === 'liked') {
+                const liked = item.actionType === 'like';
+                actionBadge = `<span style="${badgeStyle} font-weight: bold; color: ${liked ? '#22c55e' : '#ef4444'}">${liked ? '👍 Liked' : '👎 Disliked'}</span>`;
+            } else if (type === 'favorites') {
+                actionBadge = `<span style="${badgeStyle} color:#f59e0b;">★ ${date}</span>`;
+            } else {
+                const episodeTag = item.mediaType === 'tv' && item.season
+                    ? ` · S${item.season}E${item.episode}`
+                    : '';
+                actionBadge = `<span style="${badgeStyle}">${date}${episodeTag}</span>`;
+            }
+
+            const progress = type === 'watched' && item.progressPercent > 0
+                ? `<div style="position:absolute; bottom:0; left:0; right:0; height:4px; background:rgba(255,255,255,0.15);">
+                       <div style="width:${Math.min(100, item.progressPercent)}%; height:100%; background:var(--accent-green, #22c55e);"></div>
+                   </div>`
+                : '';
 
             gridHtml += `
-                <div class="movie-card" onclick="router.navigate('details', { id: '${item.media_id}', type: '${item.media_type}' })" style="position: relative;">
+                <div class="movie-card" onclick="router.navigate('details', { id: '${item.mediaId}', type: '${item.mediaType}' })" style="position: relative;">
                     <div class="movie-poster">
-                        ${item.poster_path
-                    ? `<img src="https://image.tmdb.org/t/p/w342${item.poster_path}" alt="${item.title}" loading="lazy">`
+                        ${item.posterPath
+                    ? `<img src="https://image.tmdb.org/t/p/w342${item.posterPath}" alt="${item.title}" loading="lazy">`
                     : `<div class="movie-poster-placeholder">No Image</div>`}
                         ${actionBadge}
+                        ${progress}
                     </div>
                     <div class="movie-info">
                         <h3 class="movie-title">${item.title}</h3>
-                        <span class="movie-type" style="text-transform: uppercase; font-size: 12px; color: var(--text-secondary);">${item.media_type}</span>
+                        <span class="movie-type" style="text-transform: uppercase; font-size: 12px; color: var(--text-secondary);">${item.mediaType}</span>
                     </div>
                 </div>
             `;

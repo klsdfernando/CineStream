@@ -1,167 +1,179 @@
 /**
  * Playlist IPC Handlers
- * Handles user playlists/watchlists via Supabase
+ *
+ * Supabase only — playlists belong to an account, so guests get a
+ * "sign in" response rather than local storage. Row Level Security
+ * enforces ownership; the explicit user_id filters are just to keep
+ * the queries cheap.
  */
 
 const { ipcMain } = require('electron');
 const { supabase } = require('../services/supabase');
+const { getCurrentUser } = require('../services/identity');
+
+const AUTH_REQUIRED = { error: 'Sign in to use playlists', requiresAuth: true };
+
+function mapItem(row) {
+    return {
+        id: row.id,
+        mediaId: row.media_id,
+        mediaType: row.media_type,
+        title: row.title,
+        posterPath: row.poster_path,
+        addedAt: row.added_at
+    };
+}
 
 function registerPlaylistHandlers() {
-    /**
-     * Create a new playlist
-     */
-    ipcMain.handle('playlist:create', async (_, { name, description, isPublic }) => {
+    ipcMain.handle('playlist:create', async (_, { name, description, isPublic } = {}) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { error: 'Not authenticated' };
-            if (!name) return { error: 'Playlist name is required' };
+            if (!name || !name.trim()) return { error: 'Playlist name is required' };
 
-            const { data, error } = await supabase.from('playlists').insert({
-                user_id: user.id, name, description: description || '', is_public: isPublic || false,
-            }).select().single();
+            const user = await getCurrentUser();
+            if (!user) return AUTH_REQUIRED;
 
-            if (error) throw error;
-            return { success: true, playlist: data };
+            const { data, error } = await supabase
+                .from('playlists')
+                .insert({
+                    user_id: user.id,
+                    name: name.trim(),
+                    description: description || '',
+                    is_public: !!isPublic
+                })
+                .select()
+                .single();
+
+            if (error) return { error: error.message };
+            return { success: true, playlist: { ...data, items: [], item_count: 0 } };
         } catch (error) {
-            console.error('[Playlist] Error creating:', error);
+            console.error('[Playlist] create failed:', error.message);
             return { error: 'Failed to create playlist' };
         }
     });
 
-    /**
-     * Get all playlists for logged in user
-     */
     ipcMain.handle('playlist:getAll', async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { playlists: [] };
+            const user = await getCurrentUser();
+            if (!user) return { success: true, playlists: [], requiresAuth: true };
 
-            const { data, error } = await supabase.from('playlists')
+            const { data, error } = await supabase
+                .from('playlists')
                 .select('*, playlist_items(count)')
                 .eq('user_id', user.id)
                 .order('updated_at', { ascending: false });
 
-            if (error) throw error;
+            if (error) return { success: false, playlists: [] };
 
             const playlists = (data || []).map(p => ({
                 ...p,
-                item_count: p.playlist_items?.[0]?.count || 0,
+                item_count: p.playlist_items?.[0]?.count || 0
             }));
-
             return { success: true, playlists };
         } catch (error) {
-            console.error('[Playlist] Error fetching:', error);
-            return { playlists: [] };
+            console.error('[Playlist] getAll failed:', error.message);
+            return { success: false, playlists: [] };
         }
     });
 
-    /**
-     * Get a specific playlist with its items
-     */
     ipcMain.handle('playlist:getDetails', async (_, playlistId) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { playlist: null };
+            const user = await getCurrentUser();
+            if (!user) return { playlist: null, requiresAuth: true };
 
-            const { data: playlist, error } = await supabase.from('playlists')
+            const { data: playlist, error } = await supabase
+                .from('playlists')
                 .select('*')
                 .eq('id', playlistId)
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (error || !playlist) return { playlist: null };
 
-            const { data: items } = await supabase.from('playlist_items')
+            const { data: items } = await supabase
+                .from('playlist_items')
                 .select('*')
                 .eq('playlist_id', playlistId)
                 .order('added_at', { ascending: false });
 
-            playlist.items = items || [];
+            playlist.items = (items || []).map(mapItem);
+            playlist.item_count = playlist.items.length;
             return { success: true, playlist };
         } catch (error) {
-            console.error('[Playlist] Error fetching details:', error);
+            console.error('[Playlist] getDetails failed:', error.message);
             return { playlist: null };
         }
     });
 
-    /**
-     * Add item to playlist
-     */
-    ipcMain.handle('playlist:addItem', async (_, { playlistId, mediaId, mediaType, title, posterPath }) => {
+    ipcMain.handle('playlist:addItem', async (_, { playlistId, mediaId, mediaType, title, posterPath } = {}) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { error: 'Not authenticated' };
-            if (!mediaId || !mediaType || !title) return { error: 'Missing required media details' };
+            if (!playlistId || !mediaId) return { error: 'Playlist ID and media ID are required' };
 
-            // Verify ownership
-            const { data: playlist } = await supabase.from('playlists')
-                .select('id').eq('id', playlistId).eq('user_id', user.id).single();
-            if (!playlist) return { error: 'Playlist not found or unauthorized' };
+            const user = await getCurrentUser();
+            if (!user) return AUTH_REQUIRED;
 
-            const { error } = await supabase.from('playlist_items').insert({
-                playlist_id: playlistId, media_id: String(mediaId), media_type: mediaType,
-                title, poster_path: posterPath || null,
-            });
+            const { data, error } = await supabase
+                .from('playlist_items')
+                .upsert({
+                    playlist_id: playlistId,
+                    media_id: String(mediaId),
+                    media_type: mediaType === 'tv' ? 'tv' : 'movie',
+                    title: title || 'Unknown Title',
+                    poster_path: posterPath || null
+                }, { onConflict: 'playlist_id,media_id,media_type' })
+                .select()
+                .single();
 
-            if (error) {
-                if (error.code === '23505') return { success: false, message: 'Item already in playlist' };
-                throw error;
-            }
+            if (error) return { error: error.message };
 
-            // Update playlist timestamp
-            await supabase.from('playlists').update({ updated_at: new Date().toISOString() }).eq('id', playlistId);
+            // bump the parent so "recently updated" ordering stays truthful
+            await supabase
+                .from('playlists')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', playlistId);
 
-            return { success: true };
+            return { success: true, item: mapItem(data) };
         } catch (error) {
-            console.error('[Playlist] Error adding item:', error);
+            console.error('[Playlist] addItem failed:', error.message);
             return { error: 'Failed to add item to playlist' };
         }
     });
 
-    /**
-     * Remove item from playlist
-     */
-    ipcMain.handle('playlist:removeItem', async (_, { playlistId, mediaId }) => {
+    ipcMain.handle('playlist:removeItem', async (_, { playlistId, mediaId } = {}) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { error: 'Not authenticated' };
+            if (!playlistId || !mediaId) return { error: 'Playlist ID and media ID are required' };
 
-            // Verify ownership
-            const { data: playlist } = await supabase.from('playlists')
-                .select('id').eq('id', playlistId).eq('user_id', user.id).single();
-            if (!playlist) return { error: 'Playlist not found or unauthorized' };
+            const user = await getCurrentUser();
+            if (!user) return AUTH_REQUIRED;
 
-            await supabase.from('playlist_items')
+            const { error } = await supabase
+                .from('playlist_items')
                 .delete()
                 .eq('playlist_id', playlistId)
                 .eq('media_id', String(mediaId));
 
-            await supabase.from('playlists').update({ updated_at: new Date().toISOString() }).eq('id', playlistId);
-
+            if (error) return { error: error.message };
             return { success: true };
         } catch (error) {
-            console.error('[Playlist] Error removing item:', error);
+            console.error('[Playlist] removeItem failed:', error.message);
             return { error: 'Failed to remove item' };
         }
     });
 
-    /**
-     * Delete a playlist
-     */
     ipcMain.handle('playlist:delete', async (_, playlistId) => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return { error: 'Not authenticated' };
+            const user = await getCurrentUser();
+            if (!user) return AUTH_REQUIRED;
 
-            const { error } = await supabase.from('playlists')
+            const { error } = await supabase
+                .from('playlists')
                 .delete()
                 .eq('id', playlistId)
                 .eq('user_id', user.id);
 
-            if (error) throw error;
+            if (error) return { error: error.message };
             return { success: true };
         } catch (error) {
-            console.error('[Playlist] Error deleting:', error);
+            console.error('[Playlist] delete failed:', error.message);
             return { error: 'Failed to delete playlist' };
         }
     });

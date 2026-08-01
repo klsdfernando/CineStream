@@ -617,3 +617,115 @@
     font-weight: 600;
     color: var(--text-primary);
 }
+
+/* ============================================
+   Floating Picture-in-Picture Mini Player
+   ============================================ */
+.mini-player-root {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 99999;
+    display: none;
+    pointer-events: none;
+}
+
+.mini-player-root.is-active {
+    display: block;
+    pointer-events: auto;
+}
+
+.mini-player-container {
+    width: 360px;
+    height: 220px;
+    background: #09090b;
+    border: 1px solid rgba(74, 222, 128, 0.4);
+    border-radius: var(--radius-lg, 12px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 20px var(--accent-green-glow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mini-player-container:hover {
+    transform: translateY(-2px) scale(1.01);
+    border-color: var(--accent-green);
+}
+
+.mini-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(18, 18, 20, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 8px;
+}
+
+.mini-player-title-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.mini-player-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: var(--accent-green);
+    color: #000000;
+    flex-shrink: 0;
+}
+
+.mini-player-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mini-player-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.mini-player-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mini-player-btn.expand:hover {
+    background: var(--accent-green);
+    color: #000000;
+}
+
+.mini-player-btn.close:hover {
+    background: #ef4444;
+    color: #ffffff;
+}
+
+.mini-player-body {
+    flex: 1;
+    width: 100%;
+    height: calc(100% - 38px);
+    background: #000000;
+    position: relative;
+}

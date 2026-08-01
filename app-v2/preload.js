@@ -57,6 +57,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // ─── Authentication ───
     auth: {
+        restoreSession: () => ipcRenderer.invoke('auth:restoreSession'),
         signup: (data) => ipcRenderer.invoke('auth:signup', data),
         signin: (data) => ipcRenderer.invoke('auth:signin', data),
         signout: () => ipcRenderer.invoke('auth:signout'),
@@ -67,8 +68,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // ─── User Activity ───
     activity: {
         record: (data) => ipcRenderer.invoke('activity:record', data),
+        recordWatchTime: (data) => ipcRenderer.invoke('activity:recordWatchTime', data),
         getHistory: (type) => ipcRenderer.invoke('activity:getHistory', type),
-        getStatus: (mediaId) => ipcRenderer.invoke('activity:getStatus', mediaId),
+        getStatus: (mediaId, mediaType) => ipcRenderer.invoke('activity:getStatus', mediaId, mediaType),
+        getContinueWatching: () => ipcRenderer.invoke('activity:getContinueWatching'),
+        getAnalytics: () => ipcRenderer.invoke('activity:getAnalytics'),
+        removeHistory: (data) => ipcRenderer.invoke('activity:removeHistory', data),
+        clearHistory: () => ipcRenderer.invoke('activity:clearHistory'),
+    },
+
+    // ─── Favorites ───
+    favorites: {
+        list: () => ipcRenderer.invoke('favorites:list'),
+        toggle: (data) => ipcRenderer.invoke('favorites:toggle', data),
+        check: (mediaId, mediaType) => ipcRenderer.invoke('favorites:check', mediaId, mediaType),
+    },
+
+    // ─── Preferences ───
+    prefs: {
+        get: () => ipcRenderer.invoke('prefs:get'),
+        setServer: (serverId) => ipcRenderer.invoke('prefs:setServer', serverId),
+    },
+
+    // ─── Search history ───
+    searchHistory: {
+        record: (query) => ipcRenderer.invoke('search:record', query),
+        getRecent: (limit) => ipcRenderer.invoke('search:getRecent', limit),
+        clear: () => ipcRenderer.invoke('search:clear'),
     },
 
     // ─── Playlists ───

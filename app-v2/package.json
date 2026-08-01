@@ -1,6 +1,6 @@
 {
     "name": "cinestream",
-    "version": "2.0.0",
+    "version": "2.1.1-beta.1",
     "description": "Cross-platform Movie Streaming Application",
     "author": {
         "name": "Sushan Fernando",
@@ -14,7 +14,12 @@
     "scripts": {
         "start": "electron .",
         "dev": "electron . --enable-logging",
-        "dist": "electron-builder"
+        "dist": "electron-builder",
+        "build:linux": "electron-builder --linux",
+        "build:win": "electron-builder --win",
+        "build:mac": "electron-builder --mac",
+        "build:all": "electron-builder -wlm",
+        "release:beta": "electron-builder --publish always"
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.49.0",

@@ -3,7 +3,7 @@
  */
 
 const router = {
-    currentPage: 'home',
+    currentPage: null,
     currentParams: {},
     history: [],
     // Only home page uses nav overlay. Details and other pages use solid header.
@@ -15,12 +15,35 @@ const router = {
      * @param {Object} params - Optional parameters
      */
     async navigate(page, params = {}) {
+        if (this.currentPage && this.currentPage === page && JSON.stringify(this.currentParams) === JSON.stringify(params)) {
+            return;
+        }
+
+        // Mini player pop-up check when leaving Watch page
+        if (this.currentPage === 'watch' && window.WatchPage && window.WatchPage.isPlaying) {
+            const iframe = document.getElementById('video-player-iframe');
+            if (iframe && page !== 'watch') {
+                const title = window.WatchPage.mediaData?.title || window.WatchPage.mediaData?.name || 'Video Stream';
+                if (window.MiniPlayer) {
+                    window.MiniPlayer.show({
+                        iframe,
+                        title,
+                        mediaId: window.WatchPage.mediaId,
+                        mediaType: window.WatchPage.mediaType,
+                        season: window.WatchPage.currentSeason,
+                        episode: window.WatchPage.currentEpisode
+                    });
+                }
+            }
+        }
+
         this.closeProfileMenu();
         AppLoader.show();
 
         try {
-            // Save current state to history
-            this.history.push({ page: this.currentPage, params: this.currentParams });
+            // Save current state to history (stack limit 50)
+            if (this.history.length > 50) this.history.shift();
+            this.history.push({ page: this.currentPage, params: { ...this.currentParams } });
 
             this.currentPage = page;
             this.currentParams = params;
@@ -85,7 +108,18 @@ const router = {
                 await HomePage.render();
                 break;
             case 'watch':
-                await WatchPage.render(this.currentParams);
+                if (window.MiniPlayer && window.MiniPlayer.active && window.MiniPlayer.mediaId === this.currentParams?.id) {
+                    await WatchPage.render(this.currentParams);
+                    const playerContainer = document.querySelector('.video-player-container');
+                    if (playerContainer) {
+                        window.MiniPlayer.restoreIframeToWatchPage(playerContainer);
+                    }
+                } else {
+                    if (window.MiniPlayer && window.MiniPlayer.active) {
+                        window.MiniPlayer.close();
+                    }
+                    await WatchPage.render(this.currentParams);
+                }
                 break;
             case 'person':
                 await PersonPage.render(this.currentParams);
@@ -107,6 +141,9 @@ const router = {
                 break;
             case 'profile':
                 await ProfilePage.render();
+                break;
+            case 'library':
+                await LibraryPage.render();
                 break;
             case 'downloads':
                 await DownloadsPage.render();
@@ -222,6 +259,22 @@ const router = {
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.closeProfileMenu();
+        });
+
+        // Mouse Back Button (Button 3 / XButton1)
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 3) {
+                e.preventDefault();
+                this.back();
+            }
+        });
+
+        // Keyboard Alt+LeftArrow
+        window.addEventListener('keydown', (e) => {
+            if (e.altKey && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                this.back();
+            }
         });
 
         // Home Movies / TV / Anime switcher

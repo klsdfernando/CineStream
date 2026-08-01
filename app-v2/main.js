@@ -8,6 +8,7 @@ const { registerTmdbHandlers } = require('./main/ipc/tmdbHandlers');
 const { registerAuthHandlers } = require('./main/ipc/authHandlers');
 const { registerActivityHandlers } = require('./main/ipc/activityHandlers');
 const { registerPlaylistHandlers } = require('./main/ipc/playlistHandlers');
+const { registerUserDataHandlers } = require('./main/ipc/userDataHandlers');
 const { registerReportHandlers } = require('./main/ipc/reportHandlers');
 const { registerTorrentHandlers } = require('./main/ipc/torrentHandlers');
 const { registerSubtitleHandlers } = require('./main/ipc/subtitleHandlers');
@@ -195,6 +196,7 @@ app.whenReady().then(() => {
     registerAuthHandlers();
     registerActivityHandlers();
     registerPlaylistHandlers();
+    registerUserDataHandlers();
     registerReportHandlers();
     registerTorrentHandlers();
     registerSubtitleHandlers();

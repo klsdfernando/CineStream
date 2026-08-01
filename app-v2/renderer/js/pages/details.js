@@ -404,10 +404,26 @@ const DetailsPage = {
       openTrailer(e.currentTarget.dataset.url);
     });
 
-    // Action Buttons Toast
-    document.getElementById('btn-watchlist-pill')?.addEventListener('click', () => api.showUnderDevelopmentToast());
-    document.getElementById('btn-share-pill')?.addEventListener('click', () => api.showUnderDevelopmentToast());
-    document.getElementById('btn-add-list')?.addEventListener('click', () => api.showUnderDevelopmentToast());
+    // Action Buttons
+    const openPlModal = () => {
+      if (window.PlaylistModal && this.mediaData) {
+        PlaylistModal.open({
+          mediaId: this.mediaId,
+          mediaType: this.mediaType,
+          title: this.mediaData.title || this.mediaData.name,
+          posterPath: this.mediaData.poster_path
+        });
+      }
+    };
+
+    document.getElementById('btn-watchlist-pill')?.addEventListener('click', openPlModal);
+    document.getElementById('btn-add-list')?.addEventListener('click', openPlModal);
+    document.getElementById('btn-share-pill')?.addEventListener('click', () => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      }
+    });
     document.getElementById('btn-left-report')?.addEventListener('click', () => router.navigate('report'));
 
     // Carousel Scroll Handlers

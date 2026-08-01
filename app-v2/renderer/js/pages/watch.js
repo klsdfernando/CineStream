@@ -334,6 +334,14 @@ const WatchPage = {
                                 </svg>
                                 Favorites
                             </button>
+                            <button class="watch-action-btn playlist" id="btn-add-playlist">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                    <line x1="12" y1="11" x2="12" y2="17"/>
+                                    <line x1="9" y1="14" x2="15" y2="14"/>
+                                </svg>
+                                Playlist
+                            </button>
                             <button class="watch-action-btn share" id="btn-share">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="18" cy="5" r="3"/>
@@ -482,6 +490,8 @@ const WatchPage = {
                 </div>
             </div>
         `;
+
+        this.checkInteractionStatus();
     },
 
     // Equalizer band centre frequencies (Hz)
@@ -1191,37 +1201,38 @@ const WatchPage = {
             });
         });
 
-        // Like / Dislike / Favorites / Share
+        // Like / Dislike / Favorites / Playlist / Share
         const likeBtn = document.getElementById('btn-like');
         const dislikeBtn = document.getElementById('btn-dislike');
         const favoriteBtn = document.getElementById('btn-favorite');
+        const playlistBtn = document.getElementById('btn-add-playlist');
         const shareBtn = document.getElementById('btn-share');
 
         if (likeBtn) likeBtn.addEventListener('click', () => this.handleActionClick('like'));
         if (dislikeBtn) dislikeBtn.addEventListener('click', () => this.handleActionClick('dislike'));
-        if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleSaveToPlaylistClick());
+        if (favoriteBtn) favoriteBtn.addEventListener('click', () => this.handleActionClick('favorite'));
+        if (playlistBtn) playlistBtn.addEventListener('click', () => this.handleSaveToPlaylistClick());
         if (shareBtn) shareBtn.addEventListener('click', () => this.handleShareClick());
     },
 
     async checkInteractionStatus() {
-        if (!localStorage.getItem('authToken')) return;
-
         try {
-            const res = await api.activity.getStatus(this.mediaId);
-            const status = res.status;
-
+            const res = await api.activity.getStatus(this.mediaId, this.mediaType);
             const likeBtn = document.getElementById('btn-like');
             const dislikeBtn = document.getElementById('btn-dislike');
+            const favoriteBtn = document.getElementById('btn-favorite');
 
-            if (likeBtn) likeBtn.classList.remove('active');
-            if (dislikeBtn) dislikeBtn.classList.remove('active');
-
-            if (status === 'like' && likeBtn) {
-                likeBtn.classList.add('active');
-                likeBtn.style.color = 'var(--accent-green)';
-            } else if (status === 'dislike' && dislikeBtn) {
-                dislikeBtn.classList.add('active');
-                dislikeBtn.style.color = '#ef4444';
+            if (likeBtn) {
+                likeBtn.classList.toggle('active', !!res?.liked);
+                likeBtn.style.color = res?.liked ? 'var(--accent-green)' : '';
+            }
+            if (dislikeBtn) {
+                dislikeBtn.classList.toggle('active', !!res?.disliked);
+                dislikeBtn.style.color = res?.disliked ? '#ef4444' : '';
+            }
+            if (favoriteBtn) {
+                favoriteBtn.classList.toggle('active', !!res?.favorited);
+                favoriteBtn.style.color = res?.favorited ? '#f59e0b' : '';
             }
         } catch (error) {
             console.error('Failed to get interaction status:', error);
@@ -1229,16 +1240,10 @@ const WatchPage = {
     },
 
     requireAuth() {
-        if (!localStorage.getItem('authToken')) {
-            alert('Please login to use this feature.');
-            return false;
-        }
         return true;
     },
 
     async handleActionClick(actionType) {
-        if (!this.requireAuth()) return;
-
         try {
             const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
             const posterPath = this.mediaData?.poster_path;
@@ -1251,39 +1256,37 @@ const WatchPage = {
                 actionType: actionType
             });
 
-            if (res.success) {
-                const likeBtn = document.getElementById('btn-like');
-                const dislikeBtn = document.getElementById('btn-dislike');
+            if (res?.requiresAuth) {
+                alert('Please sign in to like, dislike or save favorites.');
+                return;
+            }
 
-                // Reset styles
-                likeBtn.classList.remove('active');
-                likeBtn.style.color = '';
-                dislikeBtn.classList.remove('active');
-                dislikeBtn.style.color = '';
-
-                // Apply new style if added
-                if (res.result.action === 'added' || res.result.action === 'updated') {
-                    if (res.result.type === 'like') {
-                        likeBtn.classList.add('active');
-                        likeBtn.style.color = 'var(--accent-green)';
-                    } else if (res.result.type === 'dislike') {
-                        dislikeBtn.classList.add('active');
-                        dislikeBtn.style.color = '#ef4444';
-                    }
-                }
+            if (res && res.success) {
+                await this.checkInteractionStatus();
             }
         } catch (error) {
             console.error(`Failed to record ${actionType} action:`, error);
-            alert(`Failed to record action. Please try again.`);
         }
     },
 
     handleShareClick() {
-        api.showUnderDevelopmentToast();
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+        }
     },
 
     async handleSaveToPlaylistClick() {
-        api.showUnderDevelopmentToast();
+        const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
+        const posterPath = this.mediaData?.poster_path;
+        if (window.PlaylistModal) {
+            PlaylistModal.open({
+                mediaId: this.mediaId,
+                mediaType: this.mediaType,
+                title,
+                posterPath
+            });
+        }
     },
 
     async saveMovieToPlaylist(playlistId) {
@@ -1379,20 +1382,23 @@ const WatchPage = {
             this.isPlaying = true;
             this.reinjectSubtitles();
             this.reapplyAudio();
+            this.startTelemetryTracking();
 
-            // Record "watched" activity if logged in
-            if (localStorage.getItem('authToken')) {
-                const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
-                const posterPath = this.mediaData?.poster_path;
+            // Record "watched" activity
+            const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
+            const posterPath = this.mediaData?.poster_path;
+            const serverObj = this.servers.find(s => s.id === this.currentPlayer) || this.servers[0];
 
-                api.activity.record({
-                    mediaId: this.mediaId,
-                    mediaType: this.mediaType,
-                    title: title,
-                    posterPath: posterPath,
-                    actionType: 'watched'
-                }).catch(err => console.error('Failed to record watch history:', err));
-            }
+            api.activity.record({
+                mediaId: this.mediaId,
+                mediaType: this.mediaType,
+                title: title,
+                posterPath: posterPath,
+                actionType: 'watched',
+                playerUsed: serverObj?.name || this.currentPlayer,
+                season: this.currentSeason,
+                episode: this.currentEpisode
+            }).catch(err => console.error('Failed to record watch history:', err));
         }
     },
 
@@ -1861,6 +1867,69 @@ const WatchPage = {
                 }
             });
         });
+    },
+
+    startTelemetryTracking() {
+        this.stopTelemetryTracking();
+        this.watchSeconds = 0;
+        this.telemetryTimer = setInterval(() => {
+            if (this.isPlaying) {
+                this.watchSeconds += 1;
+                if (this.watchSeconds % 5 === 0) {
+                    this.syncTelemetry();
+                }
+            }
+        }, 1000);
+
+        this._onPlayerMessage = (event) => {
+            try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                if (!data) return;
+                if (data.type === 'timeupdate' || data.event === 'timeupdate') {
+                    if (data.currentTime) this.lastPosition = Math.round(data.currentTime);
+                    if (data.duration) this.videoDuration = Math.round(data.duration);
+                }
+            } catch (e) {}
+        };
+        window.addEventListener('message', this._onPlayerMessage);
+    },
+
+    stopTelemetryTracking() {
+        if (this.telemetryTimer) {
+            clearInterval(this.telemetryTimer);
+            this.telemetryTimer = null;
+        }
+        if (this._onPlayerMessage) {
+            window.removeEventListener('message', this._onPlayerMessage);
+            this._onPlayerMessage = null;
+        }
+        this.syncTelemetry();
+    },
+
+    async syncTelemetry() {
+        if (!this.mediaId) return;
+        const title = this.mediaData?.title || this.mediaData?.name || 'Unknown Title';
+        const posterPath = this.mediaData?.poster_path;
+        const serverObj = this.servers.find(s => s.id === this.currentPlayer) || this.servers[0];
+
+        try {
+            await api.activity.recordWatchTime({
+                mediaId: this.mediaId,
+                mediaType: this.mediaType,
+                title: title,
+                posterPath: posterPath,
+                playerUsed: serverObj?.name || this.currentPlayer,
+                watchSeconds: this.watchSeconds || 0,
+                lastPosition: this.lastPosition || 0,
+                duration: this.videoDuration || 0,
+                season: this.currentSeason,
+                episode: this.currentEpisode
+            });
+        } catch (err) {}
+    },
+
+    async loadActivityStatus() {
+        return this.checkInteractionStatus();
     }
 };
 

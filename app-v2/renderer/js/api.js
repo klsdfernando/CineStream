@@ -65,6 +65,7 @@ const api = {
 
     // ─── Auth endpoints (via Supabase) ───
     auth: {
+        restoreSession: () => window.electronAPI.auth.restoreSession(),
         signup: (data) => window.electronAPI.auth.signup(data),
         signin: (data) => window.electronAPI.auth.signin(data),
         signout: () => window.electronAPI.auth.signout(),
@@ -75,8 +76,33 @@ const api = {
     // ─── User Activity endpoints (via Supabase) ───
     activity: {
         record: (data) => window.electronAPI.activity.record(data),
+        recordWatchTime: (data) => window.electronAPI.activity.recordWatchTime(data),
         getHistory: (type) => window.electronAPI.activity.getHistory(type),
-        getStatus: (mediaId) => window.electronAPI.activity.getStatus(mediaId),
+        getStatus: (mediaId, mediaType) => window.electronAPI.activity.getStatus(mediaId, mediaType),
+        getContinueWatching: () => window.electronAPI.activity.getContinueWatching(),
+        getAnalytics: () => window.electronAPI.activity.getAnalytics(),
+        removeHistory: (id) => window.electronAPI.activity.removeHistory({ id }),
+        clearHistory: () => window.electronAPI.activity.clearHistory(),
+    },
+
+    // ─── Favorites (account-scoped) ───
+    favorites: {
+        list: () => window.electronAPI.favorites.list(),
+        toggle: (data) => window.electronAPI.favorites.toggle(data),
+        check: (mediaId, mediaType) => window.electronAPI.favorites.check(mediaId, mediaType),
+    },
+
+    // ─── Player preferences ───
+    prefs: {
+        get: () => window.electronAPI.prefs.get(),
+        setServer: (serverId) => window.electronAPI.prefs.setServer(serverId),
+    },
+
+    // ─── Search history ───
+    searchHistory: {
+        record: (query) => window.electronAPI.searchHistory.record(query),
+        getRecent: (limit) => window.electronAPI.searchHistory.getRecent(limit),
+        clear: () => window.electronAPI.searchHistory.clear(),
     },
 
     // ─── Playlists endpoints (via Supabase) ───
@@ -84,7 +110,12 @@ const api = {
         create: (data) => window.electronAPI.playlists.create(data),
         getAll: () => window.electronAPI.playlists.getAll(),
         getDetails: (id) => window.electronAPI.playlists.getDetails(id),
-        addItem: (id, data) => window.electronAPI.playlists.addItem({ playlistId: id, ...data }),
+        addItem: (idOrData, dataObj) => {
+            if (typeof idOrData === 'object' && idOrData !== null) {
+                return window.electronAPI.playlists.addItem(idOrData);
+            }
+            return window.electronAPI.playlists.addItem({ playlistId: idOrData, ...(dataObj || {}) });
+        },
         removeItem: (id, mediaId) => window.electronAPI.playlists.removeItem({ playlistId: id, mediaId }),
         delete: (id) => window.electronAPI.playlists.delete(id),
     },

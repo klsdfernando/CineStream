@@ -2,12 +2,16 @@
  * Main Application Entry Point
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Initialize titlebar controls
     initTitlebar();
 
     // Initialize brand loader
     if (window.AppLoader) AppLoader.init();
+
+    // Re-establish the Supabase session before the router renders anything,
+    // so the first page doesn't query the database as a guest.
+    await restoreSessionOnce();
 
     // Initialize user auth state
     updateUserUI();
@@ -52,18 +56,63 @@ function initTitlebar() {
     }
 }
 
+let sessionRestorePromise = null;
+
+/**
+ * Hand the stored refresh token back to the main process so it can
+ * re-establish the Supabase session. Runs at most once per launch.
+ * If the token is dead we clear the cached user so the UI shows logged out
+ * instead of pretending we are still signed in.
+ */
+function restoreSessionOnce() {
+    if (sessionRestorePromise) return sessionRestorePromise;
+
+    sessionRestorePromise = (async () => {
+        if (!window.api?.auth?.restoreSession) return;
+
+        try {
+            const res = await api.auth.restoreSession();
+
+            if (res?.success && res.user) {
+                localStorage.setItem('user', JSON.stringify(res.user));
+                localStorage.setItem('authToken', res.token || 'restored-token');
+                return;
+            }
+
+            if (localStorage.getItem('user')) {
+                console.warn('[App] Stored session is no longer valid, signing out.');
+                localStorage.removeItem('user');
+                localStorage.removeItem('authToken');
+            }
+        } catch (e) {
+            console.warn('[App] Session restore error:', e);
+        }
+    })();
+
+    return sessionRestorePromise;
+}
+
+window.restoreSessionOnce = restoreSessionOnce;
+
 /**
  * Update user UI based on authentication state
  */
-function updateUserUI() {
+async function updateUserUI() {
     const userBtn = document.getElementById('user-profile-btn');
     const userAvatar = document.getElementById('user-avatar');
     const userLabel = document.getElementById('user-label');
     const activityNav = document.getElementById('nav-activity');
     const logoutBtn = document.getElementById('nav-logout');
     const logoutDivider = document.getElementById('logout-divider');
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    const token = localStorage.getItem('authToken');
+
+    // The main process holds the Supabase session, and it starts empty on
+    // every launch. Restore it once per run even when localStorage already
+    // has a user, otherwise the UI looks signed in while every database
+    // query runs as an anonymous guest.
+    await restoreSessionOnce();
+
+    let user = JSON.parse(localStorage.getItem('user') || 'null');
+    let token = localStorage.getItem('authToken');
 
     if (user && token) {
         // User is logged in
@@ -81,7 +130,7 @@ function updateUserUI() {
             userAvatar.innerHTML = `
                 <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; 
                             background: linear-gradient(135deg, var(--accent-green), #22c55e); color: #000; 
-                            font-weight: 600; font-size: 12px;">${initials}</div>
+                            font-weight: 600; font-size: 12px;">${initials || 'U'}</div>
             `;
         }
     } else {
@@ -105,9 +154,12 @@ function updateUserUI() {
 window.updateUserUI = updateUserUI;
 
 // Logout function
-window.logoutUser = function () {
+window.logoutUser = async function () {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    updateUserUI();
+    if (window.api?.auth?.signout) {
+        await api.auth.signout();
+    }
+    await updateUserUI();
     router.navigate('home');
 };
